@@ -23,7 +23,7 @@ import {
   Building,
   AlertTriangle
 } from 'lucide-react';
-import { downloadPDF } from './utils/pdfGenerator';
+import { previewPDF } from './utils/pdfGenerator';
 
 // Types
 interface ProductCatalog {
@@ -208,6 +208,7 @@ const MyComfortApp = () => {
   const [selectedCategory, setSelectedCategory] = useState('Tous les produits');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notification, setNotification] = useState('');
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('');
 
   // Client en cours
   const [clientInfo, setClientInfo] = useState({
@@ -505,7 +506,7 @@ const MyComfortApp = () => {
   };
 
   // Sauvegarde facture
-  const saveInvoice = async () => {
+  const saveInvoice = () => {
     if (!clientInfo.name || !currentInvoice.items?.length) {
       showNotification('Veuillez remplir les informations client et ajouter des produits');
       return;
@@ -536,21 +537,6 @@ const MyComfortApp = () => {
       status: 'draft',
       eventLocation: currentInvoice.eventLocation
     };
-
-    try {
-      // Génération et téléchargement du PDF
-      await downloadPDF(invoice, {
-        companyInfo: {
-          name: "MyComfort",
-          address: "123 Rue de la Paix\n75001 Paris",
-          phone: "01 23 45 67 89",
-          email: "contact@mycomfort.fr",
-          siret: "123 456 789 00012"
-        }
-      });
-    } catch (error) {
-      console.error('Erreur génération PDF:', error);
-    }
 
     setSavedInvoices(prev => [...prev, invoice]);
     showNotification('Facture enregistrée avec succès !');
@@ -740,6 +726,54 @@ myconfort@gmail.com`;
     setSelectedClientForInvoice(null);
     setIsClientLoaded(false);
     showNotification('Sélection client effacée');
+  };
+
+  const handleShowInvoice = async () => {
+    if (currentInvoice.items?.length === 0) {
+      alert('Veuillez ajouter au moins un article');
+      return;
+    }
+    
+    try {
+      // Créer la facture temporaire pour l'aperçu
+      const tempInvoice: Invoice = {
+        id: Date.now().toString(),
+        number: currentInvoice.number || `FAC-${Date.now()}`,
+        date: currentInvoice.date || new Date().toISOString().split('T')[0],
+        client: {
+          id: Date.now().toString(),
+          name: clientInfo.name,
+          address: clientInfo.address,
+          postalCode: clientInfo.postalCode,
+          city: clientInfo.city,
+          phone: clientInfo.phone,
+          email: clientInfo.email,
+          siret: clientInfo.siret
+        },
+        items: currentInvoice.items || [],
+        total: calculateTotal(),
+        status: 'draft',
+        eventLocation: currentInvoice.eventLocation
+      };
+      
+      // Générer l'aperçu PDF
+      const pdfUrl = await previewPDF(tempInvoice, {
+        companyInfo: {
+          name: 'MyComfort',
+          address: '123 Rue de la Paix\n75001 Paris',
+          phone: '01 23 45 67 89',
+          email: 'contact@mycomfort.fr',
+          siret: '123 456 789 00012'
+        }
+      });
+      
+      setPdfPreviewUrl(pdfUrl);
+      setActiveTab('invoice');
+      
+    } catch (error) {
+      console.error('Erreur génération aperçu PDF:', error);
+      alert('Erreur lors de la génération de l\'aperçu PDF');
+    }
   };
 
   // Filtrage produits
@@ -2077,6 +2111,16 @@ myconfort@gmail.com`;
                 <span>NOUVELLE FACTURE</span>
               </button>
             </div>
+
+            {pdfPreviewUrl && (
+              <div className="w-full h-screen border rounded-lg">
+                <iframe
+                  src={pdfPreviewUrl}
+                  className="w-full h-full rounded-lg"
+                  title="Aperçu PDF de la facture"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -2159,4 +2203,401 @@ myconfort@gmail.com`;
 
         {activeTab === 'invoices' && (
           <div className="bg-white rounded-lg p-6">
-            <h2 className
+            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+              <FileText className="w-5 h-5 mr-2 text-green-600" />
+              Toutes les factures ({savedInvoices.length})
+            </h2>
+            
+            {savedInvoices.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg">Aucune facture enregistrée</p>
+                <button
+                  onClick={() => setActiveTab('invoice')}
+                  className="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Créer une facture
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {savedInvoices.map((invoice) => (
+                  <div key={invoice.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-4 mb-2">
+                        <span className="font-bold text-lg">{invoice.number}</span>
+                        <span className="text-gray-600">{new Date(invoice.date).toLocaleDateString('fr-FR')}</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+                          invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {invoice.status === 'paid' ? 'Payée' : 
+                           invoice.status === 'sent' ? 'Envoyée' : 'Brouillon'}
+                        </span>
+                      </div>
+                      <div className="text-gray-600">
+                        <div><strong>{invoice.client.name}</strong></div>
+                        <div className="text-sm">{invoice.client.address}, {invoice.client.city}</div>
+                        <div className="text-sm">{invoice.client.email} • {invoice.client.phone}</div>
+                        {invoice.eventLocation && (
+                          <div className="text-sm text-green-600 mt-1">📍 {invoice.eventLocation}</div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-green-600">{invoice.total.toLocaleString()}€</div>
+                      <div className="text-sm text-gray-500">{calculatePriceHT(invoice.total).toLocaleString()}€ HT</div>
+                      <div className="text-xs text-gray-500 mt-1">{invoice.items.length} produit(s)</div>
+                    </div>
+                    <div className="flex items-center space-x-2 ml-4">
+                      <button 
+                        onClick={() => viewInvoice(invoice)}
+                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors transform hover:scale-110"
+                        title="Voir les détails de la facture"
+                      >
+                        <Eye className="w-5 h-5" />
+                      </button>
+                      <button 
+                        onClick={() => downloadInvoice(invoice)}
+                        className="p-2 text-gray-400 hover:text-green-600 transition-colors transform hover:scale-110"
+                        title="Télécharger la facture (JSON)"
+                      >
+                        <Download className="w-5 h-5" />
+                      </button>
+                      <button 
+                        onClick={() => deleteInvoice(invoice)}
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors transform hover:scale-110"
+                        title="Supprimer définitivement la facture"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'clients' && (
+          <div className="bg-white rounded-lg p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-green-600" />
+              Gestion des coordonnées client
+            </h2>
+            
+            {/* Sélection de client */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <h3 className="font-bold text-gray-800 mb-4 flex items-center">
+                <Package className="w-5 h-5 mr-2" style={{ color: '#477A0C' }} />
+                Sélectionner un client existant
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
+                  <select
+                    value={selectedClientId}
+                    onChange={(e) => {
+                      setSelectedClientId(e.target.value);
+                      if (e.target.value) {
+                        handleLoadClient(e.target.value);
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 font-medium"
+                    style={{
+                      backgroundColor: selectedClientId ? '#F2EFE2' : '#ffffff',
+                      borderColor: selectedClientId ? '#477A0C' : '#d1d5db',
+                      color: selectedClientId ? '#477A0C' : '#6b7280'
+                    }}
+                  >
+                    <option value="">👤 Sélectionner un client</option>
+                    {clients.map(client => (
+                      <option key={client.id} value={client.id}>
+                        {client.name} - {client.city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <button
+                    onClick={handleClearClient}
+                    disabled={!selectedClientId}
+                    className="w-full px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Effacer</span>
+                  </button>
+                </div>
+                
+                <div className="text-sm text-gray-600">
+                  {clients.length} client(s) disponible(s)
+                </div>
+              </div>
+            </div>
+
+            {/* Affichage des informations chargées */}
+            {isClientLoaded && clientData && (
+              <div className="mb-6 p-4 border-2 rounded-lg" style={{ borderColor: '#477A0C', backgroundColor: '#F0FFF4' }}>
+                <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Client chargé avec succès
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <Users className="w-4 h-4 mr-2 text-gray-600" />
+                      <span className="font-medium">Nom:</span>
+                      <span className="ml-2 font-bold">{clientData.name}</span>
+                    </div>
+                    <div className="flex items-start mb-2">
+                      <MapPin className="w-4 h-4 mr-2 mt-0.5 text-gray-600" />
+                      <div>
+                        <span className="font-medium">Adresse:</span>
+                        <div className="ml-2">{clientData.address}</div>
+                        <div className="ml-2">{clientData.postalCode} {clientData.city}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <Phone className="w-4 h-4 mr-2 text-gray-600" />
+                      <span className="font-medium">Téléphone:</span>
+                      <span className="ml-2">{clientData.phone}</span>
+                    </div>
+                    <div className="flex items-center mb-2">
+                      <Mail className="w-4 h-4 mr-2 text-gray-600" />
+                      <span className="font-medium">Email:</span>
+                      <span className="ml-2">{clientData.email}</span>
+                    </div>
+                    {clientData.siret && (
+                      <div className="flex items-center">
+                        <Building className="w-4 h-4 mr-2 text-gray-600" />
+                        <span className="font-medium">SIRET:</span>
+                        <span className="ml-2">{clientData.siret}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Formulaire d'édition */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <h3 className="font-bold text-gray-800 mb-4 flex items-center">
+                <Edit3 className="w-5 h-5 mr-2" style={{ color: '#477A0C' }} />
+                {isClientLoaded ? 'Modifier les coordonnées' : 'Saisir les coordonnées client'}
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom complet <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={clientInfo.name}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    placeholder="Nom et prénom du client"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Téléphone <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={clientInfo.phone}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    placeholder="06 12 34 56 78"
+                    required
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Adresse <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={clientInfo.address}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, address: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    placeholder="Numéro et nom de rue"
+                    rows={2}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Code postal <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={clientInfo.postalCode}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, postalCode: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    placeholder="34000"
+                    maxLength={5}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ville <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={clientInfo.city}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, city: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    placeholder="Montpellier"
+                    required
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={clientInfo.email}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    placeholder="client@email.com"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type de logement</label>
+                  <select
+                    value={clientInfo.lodgingType}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, lodgingType: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="Sélectionner">Sélectionner</option>
+                    <option value="Appartement">🏢 Appartement</option>
+                    <option value="Maison">🏠 Maison</option>
+                    <option value="Studio">🏠 Studio</option>
+                    <option value="Autre">🏗️ Autre</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">SIRET (si applicable)</label>
+                  <input
+                    type="text"
+                    value={clientInfo.siret}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, siret: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    placeholder="12345678901234"
+                  />
+                </div>
+              </div>
+
+              {/* Validation */}
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2 flex items-center">
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Validation des coordonnées
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  <div className={`flex items-center ${clientInfo.name ? 'text-green-600' : 'text-red-600'}`}>
+                    {clientInfo.name ? '✓' : '✗'} Nom complet
+                  </div>
+                  <div className={`flex items-center ${clientInfo.phone ? 'text-green-600' : 'text-red-600'}`}>
+                    {clientInfo.phone ? '✓' : '✗'} Téléphone
+                  </div>
+                  <div className={`flex items-center ${clientInfo.address ? 'text-green-600' : 'text-red-600'}`}>
+                    {clientInfo.address ? '✓' : '✗'} Adresse
+                  </div>
+                  <div className={`flex items-center ${clientInfo.email ? 'text-green-600' : 'text-red-600'}`}>
+                    {clientInfo.email ? '✓' : '✗'} Email
+                  </div>
+                  <div className={`flex items-center ${clientInfo.postalCode ? 'text-green-600' : 'text-red-600'}`}>
+                    {clientInfo.postalCode ? '✓' : '✗'} Code postal
+                  </div>
+                  <div className={`flex items-center ${clientInfo.city ? 'text-green-600' : 'text-red-600'}`}>
+                    {clientInfo.city ? '✓' : '✗'} Ville
+                  </div>
+                </div>
+                
+                {clientInfo.name && clientInfo.phone && clientInfo.address && clientInfo.email && clientInfo.postalCode && clientInfo.city ? (
+                  <div className="mt-3 p-2 bg-green-100 text-green-800 rounded text-sm font-medium">
+                    ✅ Toutes les informations obligatoires sont remplies. Le client peut être utilisé pour la facturation.
+                  </div>
+                ) : (
+                  <div className="mt-3 p-2 bg-red-100 text-red-800 rounded text-sm font-medium">
+                    ⚠️ Veuillez remplir tous les champs obligatoires (marqués d'un astérisque rouge).
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'send' && (
+          <div className="bg-white rounded-lg p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+              <Send className="w-5 h-5 mr-2 text-green-600" />
+              Envoyer par email
+            </h2>
+            
+            <div className="text-center py-12">
+              <Send className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-700 mb-2">Fonctionnalité d'envoi email</h3>
+              <p className="text-gray-500 mb-4">
+                Cette fonctionnalité permettra d'envoyer automatiquement la facture par email au client.
+              </p>
+              <button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                Configurer l'envoi email
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'drive' && (
+          <div className="bg-white rounded-lg p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+              <Cloud className="w-5 h-5 mr-2 text-blue-600" />
+              Sauvegarde Google Drive
+            </h2>
+            
+            <div className="text-center py-12">
+              <Cloud className="w-20 h-20 text-blue-300 mx-auto mb-6" />
+              <h3 className="text-xl font-bold text-gray-700 mb-3">Synchronisation Google Drive</h3>
+              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                Connectez votre compte Google Drive pour sauvegarder automatiquement toutes vos factures dans le cloud.
+              </p>
+              <div className="space-y-4">
+                <button className="w-full max-w-sm px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  Se connecter à Google Drive
+                </button>
+                <div className="text-sm text-gray-500">
+                  ✓ Sauvegarde automatique<br />
+                  ✓ Accès depuis tous vos appareils<br />
+                  ✓ Sécurisé et confidentiel
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default MyComfortApp;
