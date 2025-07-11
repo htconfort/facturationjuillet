@@ -5,7 +5,7 @@ import { getPDFBlob } from './pdfGenerator';
 // Configuration EmailJS (à personnaliser avec vos clés)
 const EMAILJS_CONFIG = {
   SERVICE_ID: 'service_ymw6jih',
-  TEMPLATE_ID: 'your_template_id', 
+  TEMPLATE_ID: 'template_yng4k8s',
   PUBLIC_KEY: 'your_public_key'
 };
 
