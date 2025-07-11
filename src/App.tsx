@@ -21,7 +21,7 @@ import {
   deleteInvoice, 
   generateInvoiceNumber 
 } from './utils/invoiceStorage';
-import { downloadInvoicePDF, generateInvoicePDF } from './utils/pdfGenerator';
+import { downloadInvoicePDF } from './utils/pdfGenerator';
 import { sendPDFByEmail, initializeEmailJS } from './utils/emailService';
 import { saveInvoiceToGoogleDrive, authenticateGoogleDrive } from './utils/googleDriveService';
 
