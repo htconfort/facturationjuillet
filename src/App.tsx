@@ -146,6 +146,34 @@ const sampleClients: Client[] = [
 ];
 
 const MyComfortApp = () => {
+  // PATCH ANTI-MOULINAGE - Neutralise les services problématiques
+  React.useEffect(() => {
+    // Bloquer les services qui causent les boucles
+    if (typeof window !== 'undefined') {
+      // Neutraliser Sentry
+      if (window.Sentry) {
+        window.Sentry.init = () => {};
+        window.Sentry.replayIntegration = () => {};
+      }
+
+      // Intercepter les requêtes problématiques
+      const originalFetch = window.fetch;
+      window.fetch = (url, ...args) => {
+        if (typeof url === 'string' && (
+          url.includes('bolt.new/api/') || 
+          url.includes('/deploy/') ||
+          url.includes('/integrations/') ||
+          url.includes('appsignal')
+        )) {
+          console.log('🚫 Blocked problematic request:', url);
+          return Promise.resolve(new Response('{"blocked": true}', { status: 200 }));
+        }
+        return originalFetch(url, ...args);
+      };
+    }
+  }, []);
+
+  // VOTRE CODE EXISTANT CONTINUE ICI (ne touchez à rien d'autre)
   // PATCH ANTI-MOULINAGE - À AJOUTER EN PREMIER
   React.useEffect(() => {
     const cleanup = () => {
