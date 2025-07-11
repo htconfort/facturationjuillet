@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   ChevronDown, 
   ShoppingCart, 
@@ -24,6 +24,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { previewPDF } from './utils/pdfGenerator';
+import html2canvas from 'html2canvas';
 
 // Types
 interface ProductCatalog {
@@ -209,6 +210,7 @@ const MyComfortApp = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notification, setNotification] = useState('');
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('');
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   // Client en cours
   const [clientInfo, setClientInfo] = useState({
@@ -256,6 +258,45 @@ const MyComfortApp = () => {
   const [selectedClientId, setSelectedClientId] = useState('');
   const [clientData, setClientData] = useState<Client | null>(null);
   const [isClientLoaded, setIsClientLoaded] = useState(false);
+
+  // Fonction de génération PNG
+  const generateInvoicePNG = async (invoice: Invoice) => {
+    try {
+      const element = invoiceRef.current;
+      if (!element) {
+        console.error('Élément facture introuvable');
+        return;
+      }
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: true,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        scrollX: 0,
+        scrollY: 0
+      });
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `Facture_${invoice.number}_${invoice.client.name.replace(/\s+/g, '_')}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png', 1.0);
+
+    } catch (error) {
+      console.error('Erreur génération PNG:', error);
+    }
+  };
 
   // Extraire les tailles uniques des noms de produits
   const extractSizes = () => {
@@ -539,6 +580,12 @@ const MyComfortApp = () => {
     };
 
     setSavedInvoices(prev => [...prev, invoice]);
+
+    // Générer et télécharger le PNG après un petit délai
+    setTimeout(() => {
+      generateInvoicePNG(invoice);
+    }, 1000);
+
     showNotification('Facture enregistrée avec succès !');
   };
 
@@ -2112,15 +2159,24 @@ myconfort@gmail.com`;
               </button>
             </div>
 
-            {pdfPreviewUrl && (
-              <div className="w-full h-screen border rounded-lg">
-                <iframe
-                  src={pdfPreviewUrl}
-                  className="w-full h-full rounded-lg"
-                  title="Aperçu PDF de la facture"
-                />
-              </div>
-            )}
+            <div 
+              ref={invoiceRef}
+              className="bg-white rounded-lg shadow-lg"
+              style={{ 
+                width: '794px',
+                minHeight: '1123px'
+              }}
+            >
+              {pdfPreviewUrl && (
+                <div className="w-full h-screen border rounded-lg">
+                  <iframe
+                    src={pdfPreviewUrl}
+                    className="w-full h-full rounded-lg"
+                    title="Aperçu PDF de la facture"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         )}
 
