@@ -93,3 +93,19 @@ export const getPDFBlob = async (invoice: Invoice): Promise<Blob> => {
     throw error;
   }
 };
+
+// Fonction pour envoyer le PDF par email
+export const sendPDFByEmail = async (
+  invoice: Invoice, 
+  recipientEmail?: string,
+  customMessage?: string
+): Promise<boolean> => {
+  try {
+    // Import dynamique pour éviter les dépendances circulaires
+    const { sendPDFByEmail: emailSender } = await import('./emailService');
+    return await emailSender(invoice, recipientEmail, customMessage);
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'envoi email:', error);
+    throw error;
+  }
+};
