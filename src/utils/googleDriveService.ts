@@ -6,8 +6,8 @@ import { getPDFBlob } from './pdfGenerator';
 
 // Configuration Google Drive API
 const GOOGLE_DRIVE_CONFIG = {
-  CLIENT_ID: 'your_google_client_id.apps.googleusercontent.com',
-  API_KEY: 'your_google_api_key',
+  CLIENT_ID: '416673956609-ushnkvokiicp2ec0uug7dsvpb50mscr5.apps.googleusercontent.com',
+  API_KEY: 'AIzaSyCHArqLOqdspuiJZsXjbJiUvz_3sKtEy8M',
   DISCOVERY_DOC: 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
   SCOPES: 'https://www.googleapis.com/auth/drive.file',
   FOLDER_ID: '1hZsPW8TeZ6s3AlLesb1oLQNbI3aJY3p-' // Dossier MyComfort Factures
