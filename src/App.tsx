@@ -210,6 +210,7 @@ const MyComfortApp = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notification, setNotification] = useState('');
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('');
+  const [isGeneratingPNG, setIsGeneratingPNG] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   // Client en cours
@@ -259,42 +260,55 @@ const MyComfortApp = () => {
   const [clientData, setClientData] = useState<Client | null>(null);
   const [isClientLoaded, setIsClientLoaded] = useState(false);
 
-  // Fonction de génération PNG
+  // Fonction PNG propre et stable
   const generateInvoicePNG = async (invoice: Invoice) => {
+    if (isGeneratingPNG) return;
+    
     try {
+      setIsGeneratingPNG(true);
+      console.log('🎨 Génération PNG en cours...');
+      
       const element = invoiceRef.current;
       if (!element) {
-        console.error('Élément facture introuvable');
-        return;
+        throw new Error('Élément facture introuvable');
       }
 
+      // Attendre stabilisation de l'UI
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Capturer avec html2canvas
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
         allowTaint: true,
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        scrollX: 0,
-        scrollY: 0
+        foreignObjectRendering: true,
+        width: 794,  // A4 largeur
+        height: 1123 // A4 hauteur
       });
 
+      // Créer et télécharger l'image
       canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `Facture_${invoice.number}_${invoice.client.name.replace(/\s+/g, '_')}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }
-      }, 'image/png', 1.0);
+        if (!blob) return;
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Facture_${invoice.number}_${invoice.client.name.replace(/\s+/g, '_')}.png`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        console.log(`✅ PNG téléchargé: ${link.download}`);
+      }, 'image/png', 0.95);
 
     } catch (error) {
-      console.error('Erreur génération PNG:', error);
+      console.error('❌ Erreur génération PNG:', error);
+    } finally {
+      setIsGeneratingPNG(false);
     }
   };
 
@@ -580,12 +594,12 @@ const MyComfortApp = () => {
     };
 
     setSavedInvoices(prev => [...prev, invoice]);
-
-    // Générer et télécharger le PNG après un petit délai
+    
+    // Générer PNG après un délai
     setTimeout(() => {
       generateInvoicePNG(invoice);
     }, 1000);
-
+    
     showNotification('Facture enregistrée avec succès !');
   };
 
@@ -2159,24 +2173,18 @@ myconfort@gmail.com`;
               </button>
             </div>
 
-            <div 
-              ref={invoiceRef}
-              className="bg-white rounded-lg shadow-lg"
-              style={{ 
-                width: '794px',
-                minHeight: '1123px'
-              }}
-            >
-              {pdfPreviewUrl && (
-                <div className="w-full h-screen border rounded-lg">
-                  <iframe
-                    src={pdfPreviewUrl}
-                    className="w-full h-full rounded-lg"
-                    title="Aperçu PDF de la facture"
-                  />
-                </div>
-              )}
-            </div>
+            {pdfPreviewUrl && (
+              <div 
+                ref={invoiceRef}
+                className="w-full h-screen border rounded-lg"
+              >
+                <iframe
+                  src={pdfPreviewUrl}
+                  className="w-full h-full rounded-lg"
+                  title="Aperçu PDF de la facture"
+                />
+              </div>
+            )}
           </div>
         )}
 
