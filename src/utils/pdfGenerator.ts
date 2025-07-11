@@ -109,3 +109,18 @@ export const sendPDFByEmail = async (
     throw error;
   }
 };
+
+// Fonction pour sauvegarder le PDF sur Google Drive
+export const savePDFToGoogleDrive = async (
+  invoice: Invoice,
+  customFilename?: string
+): Promise<any> => {
+  try {
+    // Import dynamique pour éviter les dépendances circulaires
+    const { saveInvoiceToGoogleDrive } = await import('./googleDriveService');
+    return await saveInvoiceToGoogleDrive(invoice, customFilename);
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde Google Drive:', error);
+    throw error;
+  }
+};
