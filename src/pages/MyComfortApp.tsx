@@ -5,7 +5,7 @@ import HeaderNav from '../components/HeaderNav';
 import StatusBar from '../components/StatusBar';
 import ClientDropdown from '../components/ClientDropdown';
 import InvoiceDropdown from '../components/InvoiceDropdown';
-import ProductForm from '../components/ProductForm';
+import { ProductForm } from '../components/ProductForm';
 import ProductTable from '../components/ProductTable';
 import TotalsBlock from '../components/TotalsBlock';
 import SignaturePad from '../components/SignaturePad';
