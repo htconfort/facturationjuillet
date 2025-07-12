@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import jsPDF from "jspdf";
 
 // Import des utilitaires PDF
 import { downloadPDF as generatePDF } from '../utils/pdfGenerator';
@@ -58,76 +59,30 @@ export default function MyComfortApp() {
 
   const total = produits.reduce((acc, p) => acc + p.prix * p.quantite, 0);
 
-  // Fonction de sauvegarde locale améliorée
+  // Fonction de sauvegarde locale simple
   const saveLocal = () => {
-    try {
-      // Créer l'objet facture
-      const facture = {
-        id: `FAC-${Date.now()}`,
-        invoiceNumber: `FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`,
-        date: new Date().toLocaleDateString('fr-FR'),
-        clientName: client.nom,
-        clientAddress: `${client.adresse}\n${client.codePostal} ${client.ville}`,
-        clientPhone: client.telephone,
-        clientEmail: client.email,
-        items: produits.map(p => ({
-          id: Date.now().toString() + Math.random(),
-          description: p.nom,
-          quantity: p.quantite,
-          unitPrice: p.prix,
-          total: p.prix * p.quantite
-        })),
-        subtotal: total / 1.2, // Prix HT (en supposant TVA 20%)
-        tax: total - (total / 1.2), // TVA
-        total: total
-      };
-
-      // Récupérer les factures existantes
-      const facturesExistantes = JSON.parse(localStorage.getItem("factures") || "[]");
-      
-      // Ajouter la nouvelle facture
-      facturesExistantes.push(facture);
-      
-      // Sauvegarder le tableau mis à jour
-      localStorage.setItem("factures", JSON.stringify(facturesExistantes));
-      
-      alert(`✅ Facture ${facture.invoiceNumber} enregistrée ! Total: ${facturesExistantes.length} facture(s) sauvegardée(s).`);
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      alert("❌ Erreur lors de la sauvegarde");
-    }
+    const facture = {
+      client,
+      produits,
+      total: produits.reduce((acc, p) => acc + p.prix * p.quantite, 0),
+      date: new Date().toISOString(),
+    };
+    localStorage.setItem("derniereFacture", JSON.stringify(facture));
+    alert("✅ Facture enregistrée dans le navigateur !");
   };
 
-  // Fonction de téléchargement PDF
-  const downloadPDF = async () => {
-    try {
-      // Créer l'objet facture pour le PDF
-      const invoiceForPDF: Invoice = {
-        id: `FAC-${Date.now()}`,
-        invoiceNumber: `FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`,
-        date: new Date().toLocaleDateString('fr-FR'),
-        clientName: client.nom,
-        clientAddress: `${client.adresse}\n${client.codePostal} ${client.ville}`,
-        clientPhone: client.telephone,
-        clientEmail: client.email,
-        items: produits.map(p => ({
-          id: Date.now().toString() + Math.random(),
-          description: p.nom,
-          quantity: p.quantite,
-          unitPrice: p.prix,
-          total: p.prix * p.quantite
-        })),
-        subtotal: total / 1.2,
-        tax: total - (total / 1.2),
-        total: total
-      };
-
-      await generatePDF(invoiceForPDF);
-      alert("✅ PDF téléchargé avec succès !");
-    } catch (error) {
-      console.error('Erreur PDF:', error);
-      alert("❌ Erreur lors de la génération du PDF");
-    }
+  // Fonction de téléchargement PDF simple
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.text(`Facture MyConfort\nClient : ${client.nom || "-"}\nDate : ${new Date().toLocaleDateString('fr-FR')}\nTotal : ${produits.reduce((acc, p) => acc + p.prix * p.quantite, 0)}€`, 10, 10);
+    produits.forEach((p, i) => {
+      doc.text(
+        `${i + 1}. ${p.nom} (${p.taille}) x${p.quantite} = ${p.prix * p.quantite}€`,
+        10,
+        25 + i * 10
+      );
+    });
+    doc.save(`Facture-${client.nom || "client"}.pdf`);
   };
 
   return (
