@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
-import { Save, Download, Cloud } from "lucide-react";
+import { Save, Download, Cloud, CloudOff } from "lucide-react";
 
 // Import des utilitaires PDF
 import { downloadPDF as generatePDF } from '../utils/pdfGenerator';
@@ -48,6 +48,10 @@ export default function MyComfortApp() {
   const [produitTrouve, setProduitTrouve] = useState(null);
   const [produits, setProduits] = useState([]);
 
+  // État de connexion Google Drive
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
   useEffect(() => {
     if (catSel && tailleSel) {
       const prod = produitsCatalogue.find(p => p.categorie === catSel && p.taille === tailleSel);
@@ -92,15 +96,48 @@ export default function MyComfortApp() {
     doc.save(`Facture-${client.nom || "client"}.pdf`);
   };
 
-  // Fonction pour sauvegarder sur Google Drive en PNG
+  // Fonction de connexion/déconnexion Google Drive
+  const toggleGoogleDriveConnection = async () => {
+    if (isGoogleConnected) {
+      // Déconnexion
+      try {
+        if (window.gapi && window.gapi.auth2) {
+          const authInstance = window.gapi.auth2.getAuthInstance();
+          await authInstance.signOut();
+        }
+        setIsGoogleConnected(false);
+        alert("🔌 Déconnecté de Google Drive");
+      } catch (error) {
+        console.error('Erreur déconnexion:', error);
+      }
+    } else {
+      // Connexion
+      setIsConnecting(true);
+      try {
+        const authResult = await authenticateGoogle();
+        if (authResult.success) {
+          setIsGoogleConnected(true);
+          alert("✅ Connecté à Google Drive avec succès !");
+        } else {
+          alert(`❌ Erreur de connexion: ${authResult.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Erreur: ${error.message}`);
+      } finally {
+        setIsConnecting(false);
+      }
+    }
+  };
+
+  // Fonction pour sauvegarder sur Google Drive (nécessite connexion)
   const saveToGoogleDrive = async () => {
-    if (!isGoogleDriveConnected) {
+    if (!isGoogleConnected) {
       alert("⚠️ Veuillez d'abord vous connecter à Google Drive !");
       return;
     }
 
     try {
-      alert("🔄 Génération de la facture...");
+      alert("🔄 Génération et envoi de la facture...");
       
       // Générer la facture PNG
       const pngBlob = await generateInvoicePNG();
@@ -109,9 +146,17 @@ export default function MyComfortApp() {
         return;
       }
       
+      // Obtenir le token d'accès
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        alert("❌ Token d'accès manquant, reconnectez-vous");
+        setIsGoogleConnected(false);
+        return;
+      }
+      
       // Upload sur Google Drive
       const filename = `Facture_${client.nom || "client"}_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.png`;
-      const uploadResult = await uploadToGoogleDrive(pngBlob, filename, googleAccessToken);
+      const uploadResult = await uploadToGoogleDrive(pngBlob, filename, accessToken);
       
       if (uploadResult.success) {
         alert(`✅ Facture sauvegardée sur Google Drive !\n\n📁 Fichier: ${filename}\n🔗 ID: ${uploadResult.fileId}`);
@@ -125,24 +170,90 @@ export default function MyComfortApp() {
     }
   };
   
-  // Fonction de connexion Google Drive simplifiée
-  const connectToGoogleDrive = async () => {
-    setIsConnecting(true);
-    
-    // Simulation de connexion (remplacer par vraie API plus tard)
-    setTimeout(() => {
-      setIsGoogleDriveConnected(true);
-      setGoogleAccessToken('fake-token-for-demo');
-      setIsConnecting(false);
-      alert("✅ Connecté à Google Drive avec succès !");
-    }, 2000);
+  // Fonction d'authentification Google
+  const authenticateGoogle = async () => {
+    try {
+      // Charger l'API Google si nécessaire
+      if (!window.gapi) {
+        await loadGoogleAPI();
+      }
+      
+      return new Promise((resolve) => {
+        window.gapi.load('auth2', () => {
+          window.gapi.auth2.init({
+            client_id: '416673956609-ushnkvokiicp2ec0uug7dsvpb50mscr5.apps.googleusercontent.com',
+            scope: 'https://www.googleapis.com/auth/drive.file'
+          }).then(() => {
+            const authInstance = window.gapi.auth2.getAuthInstance();
+            authInstance.signIn().then((user) => {
+              const accessToken = user.getAuthResponse().access_token;
+              resolve({ success: true, accessToken });
+            }).catch((error) => {
+              resolve({ success: false, error: error.error || 'Authentification annulée' });
+            });
+          }).catch((error) => {
+            resolve({ success: false, error: 'Erreur initialisation Google API' });
+          });
+        });
+      });
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   };
   
-  // Fonction de déconnexion
-  const disconnectFromGoogleDrive = () => {
-    setIsGoogleDriveConnected(false);
-    setGoogleAccessToken(null);
-    alert("🔌 Déconnecté de Google Drive");
+  // Fonction pour obtenir le token d'accès
+  const getAccessToken = async () => {
+    try {
+      if (!window.gapi || !window.gapi.auth2) {
+        await loadGoogleAPI();
+        await initializeGoogleAuth();
+      }
+
+      const authInstance = window.gapi.auth2.getAuthInstance();
+      if (!authInstance) {
+        return null;
+      }
+
+      const user = authInstance.currentUser.get();
+      
+      if (user.isSignedIn()) {
+        return user.getAuthResponse().access_token;
+      } else {
+        console.warn('⚠️ Utilisateur non connecté');
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Erreur récupération token:', error);
+      return null;
+    }
+  };
+  
+  // Fonction pour initialiser l'authentification Google
+  const initializeGoogleAuth = () => {
+    return new Promise((resolve, reject) => {
+      window.gapi.load('auth2', () => {
+        window.gapi.auth2.init({
+          client_id: '416673956609-ushnkvokiicp2ec0uug7dsvpb50mscr5.apps.googleusercontent.com',
+          scope: 'https://www.googleapis.com/auth/drive.file'
+        }).then(resolve).catch(reject);
+      });
+    });
+  };
+
+  // Fonction pour charger l'API Google
+  const loadGoogleAPI = () => {
+    return new Promise((resolve, reject) => {
+      if (window.gapi) {
+        resolve();
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.src = 'https://apis.google.com/js/api.js';
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Impossible de charger Google API'));
+      document.head.appendChild(script);
+    });
   };
   
   // Fonction pour générer le PNG de la facture
@@ -490,31 +601,67 @@ export default function MyComfortApp() {
         <div className="mb-2"><span className="font-semibold">Total TTC :</span> <span className="text-xl text-green-700 font-bold">{total} €</span></div>
         
         {/* Boutons d'action */}
-        <div className="flex gap-3 mt-6">
-          <button
-            className="bg-blue-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-blue-800 transition-colors"
-            onClick={saveLocal}
-            disabled={!client.nom || produits.length === 0}
-          >
-            <Save className="w-4 h-4" />
-            💾 Enregistrer localement
-          </button>
-          <button
-            className="bg-green-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-green-800 transition-colors"
-            onClick={downloadPDF}
-            disabled={!client.nom || produits.length === 0}
-          >
-            <Download className="w-4 h-4" />
-            🖨️ Télécharger PDF
-          </button>
-          <button
-            className="bg-purple-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-purple-800 transition-colors"
-            onClick={saveToGoogleDrive}
-            disabled={!client.nom || produits.length === 0}
-          >
-            <Cloud className="w-4 h-4" />
-            ☁️ Sauver PNG
-          </button>
+        <div className="space-y-4 mt-6">
+          {/* Bouton de connexion Google Drive */}
+          <div className="flex justify-center">
+            <button
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold transition-colors ${
+                isGoogleConnected 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+              onClick={toggleGoogleDriveConnection}
+              disabled={isConnecting}
+            >
+              {isConnecting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Connexion...</span>
+                </>
+              ) : isGoogleConnected ? (
+                <>
+                  <Cloud className="w-5 h-5" />
+                  <span>✅ Google Drive connecté - Cliquer pour déconnecter</span>
+                </>
+              ) : (
+                <>
+                  <CloudOff className="w-5 h-5" />
+                  <span>🔌 Se connecter à Google Drive</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Boutons d'action principaux */}
+          <div className="flex gap-3">
+            <button
+              className="bg-blue-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-blue-800 transition-colors"
+              onClick={saveLocal}
+              disabled={!client.nom || produits.length === 0}
+            >
+              <Save className="w-4 h-4" />
+              💾 Enregistrer localement
+            </button>
+            <button
+              className="bg-green-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-green-800 transition-colors"
+              onClick={downloadPDF}
+              disabled={!client.nom || produits.length === 0}
+            >
+              <Download className="w-4 h-4" />
+              🖨️ Télécharger PDF
+            </button>
+            <button
+              className={`px-6 py-2 rounded font-bold flex items-center gap-2 transition-colors ${
+                isGoogleConnected 
+                  ? 'bg-green-700 hover:bg-green-800 text-white' 
+                  : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+              }`}
+              onClick={saveToGoogleDrive}
+              disabled={!client.nom || produits.length === 0 || !isGoogleConnected}
+            >
+              ☁️ Sauver PNG
+            </button>
+          </div>
         </div>
       </div>
     </div>
