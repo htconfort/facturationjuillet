@@ -1,5 +1,11 @@
 import React, { useState, useRef } from 'react';
 
+// Icônes Lucide React
+import {
+  FileText, Users, Building, Plus, X, Eye, Save, Download, Trash2, Send,
+  Cloud, Package, Edit3, Mail, Phone, AlertTriangle, ChevronDown, ShoppingCart, Minus, MapPin
+} from 'lucide-react';
+
 // Components
 import HeaderNav from '../components/HeaderNav';
 import StatusBar from '../components/StatusBar';
