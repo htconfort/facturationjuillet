@@ -10,7 +10,7 @@ const GOOGLE_DRIVE_CONFIG = {
   API_KEY: 'AIzaSyCHArqLOqdspuiJZsXjbJiUvz_3sKtEy8M',
   DISCOVERY_DOC: 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
   SCOPES: 'https://www.googleapis.com/auth/drive.file',
-  FOLDER_ID: '1hZsPW8TeZ6s3AlLesb1oLQNbI3aJY3p-' // Dossier MyComfort Factures
+  FOLDER_ID: '1hZsPW8TeZ6s3AlLesb1oLQNbI3aJY3p-' // Votre dossier Drive
 };
 
 // Interface pour les métadonnées de fichier

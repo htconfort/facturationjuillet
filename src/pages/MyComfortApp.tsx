@@ -289,7 +289,7 @@ export default function MyComfortApp() {
     try {
       const metadata = {
         name: filename,
-        parents: ['1hZsPW8TeZ6s3AlLesb1oLQNbI3aJY3p-'] // Dossier MyComfort
+        parents: ['1hZsPW8TeZ6s3AlLesb1oLQNbI3aJY3p-'] // Votre dossier Drive
       };
       
       const form = new FormData();
