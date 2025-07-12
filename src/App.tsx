@@ -1,5 +1,5 @@
 import React from 'react';
-import { MyComfortApp } from './pages/MyComfortApp';
+import MyComfortApp from './pages/MyComfortApp';
 import './index.css';
 import './styles/custom.css';
 
