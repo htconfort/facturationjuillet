@@ -10,3 +10,15 @@ export function calculateDiscountAmount(item) {
 }
 
 // ...autres fonctions
+
+export function calculateTotals(items: any[]) {
+  // Exemple de logique simple à adapter selon ton besoin
+  const total = items.reduce((acc, item) => acc + (item.priceTTC * item.quantity), 0);
+  const totalHT = total / 1.2; // Si TVA 20%
+  const tva = total - totalHT;
+  return {
+    totalTTC: total,
+    totalHT,
+    tva,
+  };
+}
