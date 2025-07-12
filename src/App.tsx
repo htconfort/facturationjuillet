@@ -212,6 +212,41 @@ const MyComfortApp = () => {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('');
   const [isGeneratingPNG, setIsGeneratingPNG] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const [showTestInvoice, setShowTestInvoice] = useState(false);
+
+  // Données de test pour l'aperçu
+  const testInvoice: Invoice = {
+    id: 'test-001',
+    invoiceNumber: '2025-001',
+    date: new Date().toLocaleDateString('fr-FR'),
+    clientName: 'Entreprise Test SARL',
+    clientAddress: '456 Avenue des Exemples\n69000 Lyon\nFrance',
+    clientPhone: '04 78 90 12 34',
+    clientEmail: 'contact@entreprise-test.fr',
+    items: [
+      {
+        description: 'Installation système de climatisation',
+        quantity: 1,
+        unitPrice: 1200.00,
+        total: 1200.00
+      },
+      {
+        description: 'Maintenance préventive',
+        quantity: 2,
+        unitPrice: 150.00,
+        total: 300.00
+      },
+      {
+        description: 'Pièces de rechange',
+        quantity: 5,
+        unitPrice: 45.00,
+        total: 225.00
+      }
+    ],
+    subtotal: 1725.00,
+    tax: 345.00,
+    total: 2070.00
+  };
 
   // Client en cours
   const [clientInfo, setClientInfo] = useState({
