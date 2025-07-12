@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   ChevronDown, 
   ShoppingCart, 
@@ -61,6 +61,13 @@ interface Invoice {
   total: number;
   status: 'draft' | 'sent' | 'paid';
   eventLocation?: string;
+}
+
+// Déclaration globale pour html2canvas
+declare global {
+  interface Window {
+    html2canvas: any;
+  }
 }
 
 // Données du catalogue
@@ -146,53 +153,9 @@ const sampleClients: Client[] = [
 ];
 
 const MyComfortApp = () => {
-  // PATCH ANTI-MOULINAGE - Neutralise les services problématiques
-  React.useEffect(() => {
-    // Bloquer les services qui causent les boucles
-    if (typeof window !== 'undefined') {
-      // Neutraliser Sentry
-      if (window.Sentry) {
-        window.Sentry.init = () => {};
-        window.Sentry.replayIntegration = () => {};
-      }
+  // REF pour PNG
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
-      // Intercepter les requêtes problématiques
-      const originalFetch = window.fetch;
-      window.fetch = (url, ...args) => {
-        if (typeof url === 'string' && (
-          url.includes('bolt.new/api/') || 
-          url.includes('/deploy/') ||
-          url.includes('/integrations/') ||
-          url.includes('appsignal')
-        )) {
-          console.log('🚫 Blocked problematic request:', url);
-          return Promise.resolve(new Response('{"blocked": true}', { status: 200 }));
-        }
-        return originalFetch(url, ...args);
-      };
-    }
-  }, []);
-
-  // VOTRE CODE EXISTANT CONTINUE ICI (ne touchez à rien d'autre)
-  // PATCH ANTI-MOULINAGE - À AJOUTER EN PREMIER
-  React.useEffect(() => {
-    const cleanup = () => {
-      // Neutraliser les services problématiques
-      if (window.Sentry) window.Sentry.init = () => {};
-      
-      const originalFetch = window.fetch;
-      window.fetch = (url, ...args) => {
-        if (typeof url === 'string' && 
-           (url.includes('bolt.new/api/') || url.includes('deploy/'))) {
-          return Promise.resolve(new Response('{}', { status: 200 }));
-        }
-        return originalFetch(url, ...args);
-      };
-    };
-    cleanup();
-  }, []);
-
-  // VOTRE CODE EXISTANT CONTINUE ICI...
   // États principaux
   const [activeTab, setActiveTab] = useState('invoice');
   const [currentInvoice, setCurrentInvoice] = useState<Partial<Invoice>>({
@@ -284,7 +247,7 @@ const MyComfortApp = () => {
     } else if (filtered.length === 0 || (selectedProduct && !filtered.find(p => p.id === selectedProduct.id))) {
       setSelectedProduct(null);
     }
-  }, [selectedProductCategory, selectedProductSize, selectedProduct]); // ✅ Toutes les dépendances incluses
+  }, [selectedProductCategory, selectedProductSize, selectedProduct]);
 
   // Fonction pour calculer le prix HT
   const calculatePriceHT = (priceTTC: number) => {
@@ -501,6 +464,57 @@ const MyComfortApp = () => {
   // Calcul du total
   const calculateTotal = () => {
     return currentInvoice.items?.reduce((total, item) => total + calculateItemTotal(item), 0) || 0;
+  };
+
+  // ⭐ FONCTION PNG
+  const generatePNG = async (): Promise<void> => {
+    try {
+      showNotification('🎨 Génération PNG...');
+      
+      const element = invoiceRef.current;
+      if (!element) {
+        showNotification('❌ Erreur: Facture introuvable');
+        return;
+      }
+
+      // Vérifier que html2canvas est disponible
+      if (!window.html2canvas) {
+        showNotification('❌ Erreur: html2canvas non chargé');
+        return;
+      }
+
+      const canvas = await window.html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        width: element.scrollWidth,
+        height: element.scrollHeight
+      });
+
+      canvas.toBlob((blob: Blob | null) => {
+        if (!blob) {
+          showNotification('❌ Erreur création blob');
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Facture_${currentInvoice.number}_${clientInfo.name.replace(/\s+/g, '_')}.png`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        showNotification('✅ PNG téléchargé avec succès !');
+      }, 'image/png');
+
+    } catch (error) {
+      showNotification('❌ Erreur génération PNG');
+      console.error('Erreur:', error);
+    }
   };
 
   // Sauvegarde facture
@@ -731,9 +745,10 @@ myconfort@gmail.com`;
     ? productCatalog 
     : productCatalog.filter(product => product.category === selectedCategory);
 
-  // Onglets de navigation avec couleurs de la charte graphique
+  // Onglets de navigation avec couleurs de la charte graphique + APERÇU
   const tabs = [
     { id: 'invoice', label: 'Enregistrer', color: 'text-gray-800', bgColor: '#F2EFE2', icon: Save },
+    { id: 'preview', label: 'Aperçu', color: 'text-white', bgColor: '#477A0C', icon: Eye },
     { id: 'invoices', label: 'Factures', color: 'text-white', bgColor: '#89BBFE', icon: FileText },
     { id: 'products', label: 'Produits', color: 'text-gray-800', bgColor: '#FDB462', icon: Package },
     { id: 'clients', label: 'Client', color: 'text-white', bgColor: '#D68FD6', icon: Users },
@@ -1133,6 +1148,283 @@ myconfort@gmail.com`;
       </div>
 
       <div className="p-6">
+        {/* ⭐ NOUVEAU ONGLET APERÇU ⭐ */}
+        {activeTab === 'preview' && (
+          <div className="space-y-6">
+            {/* Boutons de génération */}
+            <div className="bg-white rounded-lg p-6 text-center">
+              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-center">
+                <Eye className="w-5 h-5 mr-2" style={{ color: '#477A0C' }} />
+                Aperçu de la facture
+              </h2>
+              
+              <div className="flex justify-center space-x-4 mb-6">
+                <button
+                  onClick={generatePNG}
+                  className="px-6 py-3 bg-white text-green-800 rounded-lg font-bold flex items-center space-x-2 hover:opacity-90 transition-all border-2"
+                  style={{ borderColor: '#477A0C' }}
+                >
+                  <Download className="w-5 h-5" />
+                  <span>TÉLÉCHARGER PNG</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    saveInvoice();
+                    setTimeout(() => {
+                      generatePNG();
+                    }, 500);
+                  }}
+                  className="px-6 py-3 text-white rounded-lg font-bold flex items-center space-x-2 hover:opacity-90 transition-all"
+                  style={{ backgroundColor: '#14281D' }}
+                >
+                  <Save className="w-5 h-5" />
+                  <span>SAUVER + PNG</span>
+                </button>
+              </div>
+
+              {(!currentInvoice.items?.length || !clientInfo.name) && (
+                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200 mb-6">
+                  <div className="flex items-center text-yellow-800">
+                    <AlertTriangle className="w-5 h-5 mr-2" />
+                    <span className="font-medium">
+                      Veuillez remplir les informations client et ajouter des produits pour voir l'aperçu complet.
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ⭐ FACTURE À CAPTURER ⭐ */}
+            <div 
+              ref={invoiceRef}
+              className="bg-white rounded-lg shadow-lg max-w-4xl mx-auto overflow-hidden"
+              style={{ width: '794px', minHeight: '1000px' }}
+            >
+              {/* En-tête MYCONFORT */}
+              <div className="p-8 text-white" style={{ backgroundColor: '#477A0C' }}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h1 className="text-4xl font-bold mb-2">MYCONFORT</h1>
+                    <p className="text-lg opacity-90">Spécialiste en literie de qualité</p>
+                  </div>
+                  <div className="text-right text-sm space-y-1">
+                    <div>88 Avenue des Ternes</div>
+                    <div>75017 Paris, France</div>
+                    <div>SIRET: 824 313 530 00027</div>
+                    <div>Tél: 04 68 50 41 45</div>
+                    <div>Email: myconfort@gmail.com</div>
+                    <div>Site: https://www.htconfort.com</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contenu facture */}
+              <div className="p-8 space-y-8">
+                {/* Titre et infos facture */}
+                <div>
+                  <h2 className="text-3xl font-bold mb-4" style={{ color: '#477A0C' }}>FACTURE</h2>
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <div><strong>Facture n°:</strong> {currentInvoice.number || 'N° à définir'}</div>
+                      <div><strong>Date:</strong> {currentInvoice.date ? new Date(currentInvoice.date).toLocaleDateString('fr-FR') : 'Date à définir'}</div>
+                      <div><strong>Lieu:</strong> {currentInvoice.eventLocation || 'Lieu à définir'}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Date de génération:</div>
+                      <div className="font-medium">{new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR')}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informations client */}
+                <div className="p-6 rounded-lg" style={{ backgroundColor: '#F2EFE2' }}>
+                  <h3 className="font-bold text-lg mb-4 flex items-center" style={{ color: '#477A0C' }}>
+                    <Users className="w-5 h-5 mr-2" />
+                    FACTURER À:
+                  </h3>
+                  {clientInfo.name ? (
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <div className="font-bold text-lg">{clientInfo.name}</div>
+                        <div>{clientInfo.address}</div>
+                        <div>{clientInfo.postalCode} {clientInfo.city}</div>
+                        {clientInfo.lodgingType !== 'Sélectionner' && (
+                          <div className="text-sm text-gray-600 mt-1">Type: {clientInfo.lodgingType}</div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center">
+                          <Phone className="w-4 h-4 mr-2" />
+                          {clientInfo.phone}
+                        </div>
+                        <div className="flex items-center">
+                          <Mail className="w-4 h-4 mr-2" />
+                          {clientInfo.email}
+                        </div>
+                        {clientInfo.siret && (
+                          <div className="text-sm mt-2 bg-blue-100 px-2 py-1 rounded inline-block">
+                            SIRET: {clientInfo.siret}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <div>Informations client à saisir</div>
+                      <div className="text-sm mt-1">Utilisez l'onglet "Enregistrer" pour ajouter un client</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tableau des produits */}
+                <div>
+                  <h3 className="font-bold text-lg mb-4 flex items-center" style={{ color: '#477A0C' }}>
+                    <Package className="w-5 h-5 mr-2" />
+                    PRODUITS
+                  </h3>
+                  
+                  {currentInvoice.items && currentInvoice.items.length > 0 ? (
+                    <table className="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
+                      <thead>
+                        <tr style={{ backgroundColor: '#477A0C' }} className="text-white">
+                          <th className="border border-gray-300 px-4 py-3 text-left">Désignation</th>
+                          <th className="border border-gray-300 px-4 py-3 text-center">Qté</th>
+                          <th className="border border-gray-300 px-4 py-3 text-right">Prix unit.</th>
+                          <th className="border border-gray-300 px-4 py-3 text-right">Remise</th>
+                          <th className="border border-gray-300 px-4 py-3 text-right">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentInvoice.items.map((item, index) => (
+                          <tr key={item.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                            <td className="border border-gray-300 px-4 py-3">
+                              <div className="font-medium">{item.name}</div>
+                              <div className="text-sm text-gray-600">{item.category}</div>
+                            </td>
+                            <td className="border border-gray-300 px-4 py-3 text-center font-medium">
+                              {item.quantity}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-3 text-right">
+                              {item.priceTTC.toLocaleString()}€
+                            </td>
+                            <td className="border border-gray-300 px-4 py-3 text-right">
+                              {(item.discount > 0 || item.customDiscountAmount) ? (
+                                <div className="text-orange-600 font-medium">
+                                  {item.discountType === 'amount' ? (
+                                    <>-{item.customDiscountAmount?.toLocaleString()}€</>
+                                  ) : (
+                                    <>-{calculateDiscountAmount(item).toLocaleString()}€ ({item.discount}%)</>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-3 text-right font-bold" style={{ color: '#477A0C' }}>
+                              {calculateItemTotal(item).toLocaleString()}€
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="border border-gray-300 rounded-lg p-8 text-center text-gray-500">
+                      <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <div>Aucun produit ajouté</div>
+                      <div className="text-sm mt-1">Utilisez l'onglet "Enregistrer" pour ajouter des produits</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Totaux */}
+                {currentInvoice.items && currentInvoice.items.length > 0 && (
+                  <div className="grid grid-cols-2 gap-8">
+                    <div></div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b border-gray-200">
+                        <span>Montant brut:</span>
+                        <span className="font-medium">
+                          {currentInvoice.items.reduce((total, item) => total + (item.priceTTC * item.quantity), 0).toLocaleString()}€
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-200">
+                        <span>Remises accordées:</span>
+                        <span className="font-medium text-orange-600">
+                          -{currentInvoice.items.reduce((total, item) => total + calculateDiscountAmount(item), 0).toLocaleString()}€
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-200">
+                        <span>Montant HT:</span>
+                        <span className="font-medium">{calculatePriceHT(calculateTotal()).toLocaleString()}€</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-200">
+                        <span>TVA (20%):</span>
+                        <span className="font-medium">{(calculateTotal() - calculatePriceHT(calculateTotal())).toLocaleString()}€</span>
+                      </div>
+                      <div className="flex justify-between py-3 px-4 rounded-lg font-bold text-lg" style={{ backgroundColor: '#477A0C', color: 'white' }}>
+                        <span>TOTAL TTC:</span>
+                        <span>{calculateTotal().toLocaleString()}€</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Conditions de règlement */}
+                <div>
+                  <h3 className="font-bold mb-4" style={{ color: '#477A0C' }}>CONDITIONS DE RÈGLEMENT</h3>
+                  <div className="text-sm space-y-1">
+                    <div>Mode de paiement: Chèque à venir</div>
+                    <div>Conseiller(e): sylvie</div>
+                    <div>CGV acceptées par le client</div>
+                    <div>Date de génération: {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR')}</div>
+                  </div>
+                </div>
+
+                {/* Signatures */}
+                <div className="grid grid-cols-2 gap-8">
+                  <div>
+                    <div className="border-b-2 pb-2 mb-2 h-16 flex items-end" style={{ borderColor: '#477A0C' }}>
+                      {signatureMode === 'type' && typedSignature ? (
+                        <div className="font-bold text-2xl" style={{ fontFamily: 'cursive', color: '#477A0C' }}>
+                          {typedSignature}
+                        </div>
+                      ) : signatureMode === 'draw' && signaturePaths.length > 0 ? (
+                        <svg width="200" height="50" className="border-0">
+                          {signaturePaths.map((path, index) => (
+                            <path
+                              key={index}
+                              d={path}
+                              stroke="#477A0C"
+                              strokeWidth="2"
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          ))}
+                        </svg>
+                      ) : null}
+                    </div>
+                    <div className="text-sm text-center">Signature du client</div>
+                  </div>
+                  <div>
+                    <div className="border-b-2 pb-2 mb-2 h-16" style={{ borderColor: '#477A0C' }}></div>
+                    <div className="text-sm text-center">Signature MYCONFORT</div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="text-center text-xs text-gray-500 pt-4 border-t border-gray-200">
+                  MYCONFORT - Spécialiste en literie de qualité - SIRET: 824 313 530 00027
+                  <br />
+                  88 Avenue des Ternes, 75017 Paris - Tél: 04 68 50 41 45 - Email: myconfort@gmail.com
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Contenu selon l'onglet actif */}
         {(activeTab === 'invoice' || activeTab === 'clients' || activeTab === 'invoices' || activeTab === 'drive') && (
           <div className="space-y-6">
@@ -2064,6 +2356,7 @@ myconfort@gmail.com`;
           </div>
         )}
 
+        {/* RESTE DU CODE IDENTIQUE... */}
         {activeTab === 'products' && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg p-6">
