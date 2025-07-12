@@ -9,7 +9,7 @@ import ProductForm from '../components/ProductForm';
 import ProductTable from '../components/ProductTable';
 import TotalsBlock from '../components/TotalsBlock';
 import SignaturePad from '../components/SignaturePad';
-import InvoicePreview from '../components/InvoicePreview';
+import { InvoicePreview } from '../components/InvoicePreview';
 
 // Utils
 import { 
