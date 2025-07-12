@@ -95,52 +95,148 @@ export default function MyComfortApp() {
   // Fonction pour sauvegarder sur Google Drive en PNG
   const saveToGoogleDrive = async () => {
     try {
-      // Vérifier si html2canvas est disponible
-      if (!window.html2canvas) {
-        alert("❌ html2canvas n'est pas chargé. Veuillez recharger la page.");
+      alert("🔄 Connexion à Google Drive...");
+      
+      // Étape 1: Authentification Google
+      const authResult = await authenticateGoogle();
+      if (!authResult.success) {
+        alert(`❌ Erreur d'authentification: ${authResult.error}`);
         return;
       }
+      
+      alert("✅ Authentification réussie ! Génération de la facture...");
+      
+      // Étape 2: Générer la facture PNG
+      const pngBlob = await generateInvoicePNG();
+      if (!pngBlob) {
+        alert("❌ Erreur lors de la génération de l'image");
+        return;
+      }
+      
+      // Étape 3: Upload sur Google Drive
+      const filename = `Facture_${client.nom || "client"}_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.png`;
+      const uploadResult = await uploadToGoogleDrive(pngBlob, filename, authResult.accessToken);
+      
+      if (uploadResult.success) {
+        alert(`✅ Facture sauvegardée sur Google Drive !\n\n📁 Fichier: ${filename}\n🔗 ID: ${uploadResult.fileId}`);
+      } else {
+        alert(`❌ Erreur upload: ${uploadResult.error}`);
+      }
 
-      // Créer un élément temporaire avec la facture
+    } catch (error) {
+      console.error('❌ Erreur Google Drive:', error);
+      alert(`❌ Erreur: ${error.message}`);
+    }
+  };
+  
+  // Fonction d'authentification Google
+  const authenticateGoogle = async () => {
+    try {
+      // Charger l'API Google si nécessaire
+      if (!window.gapi) {
+        await loadGoogleAPI();
+      }
+      
+      return new Promise((resolve) => {
+        window.gapi.load('auth2', () => {
+          window.gapi.auth2.init({
+            client_id: '416673956609-ushnkvokiicp2ec0uug7dsvpb50mscr5.apps.googleusercontent.com',
+            scope: 'https://www.googleapis.com/auth/drive.file'
+          }).then(() => {
+            const authInstance = window.gapi.auth2.getAuthInstance();
+            authInstance.signIn().then((user) => {
+              const accessToken = user.getAuthResponse().access_token;
+              resolve({ success: true, accessToken });
+            }).catch((error) => {
+              resolve({ success: false, error: error.error || 'Authentification annulée' });
+            });
+          }).catch((error) => {
+            resolve({ success: false, error: 'Erreur initialisation Google API' });
+          });
+        });
+      });
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+  
+  // Fonction pour charger l'API Google
+  const loadGoogleAPI = () => {
+    return new Promise((resolve, reject) => {
+      if (window.gapi) {
+        resolve();
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.src = 'https://apis.google.com/js/api.js';
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Impossible de charger Google API'));
+      document.head.appendChild(script);
+    });
+  };
+  
+  // Fonction pour générer le PNG de la facture
+  const generateInvoicePNG = async () => {
+    try {
+      if (!window.html2canvas) {
+        throw new Error("html2canvas non disponible");
+      }
+      
       const factureElement = createInvoiceElement();
       document.body.appendChild(factureElement);
-
-      // Capturer en PNG avec html2canvas
+      
       const canvas = await window.html2canvas(factureElement, {
         backgroundColor: '#ffffff',
-        scale: 2, // Haute qualité
+        scale: 2,
         useCORS: true,
         allowTaint: true
       });
-
-      // Supprimer l'élément temporaire
+      
       document.body.removeChild(factureElement);
-
-      // Convertir en blob PNG
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          alert("❌ Erreur lors de la création de l'image");
-          return;
-        }
-
-        // Créer un nom de fichier
-        const filename = `Facture_${client.nom || "client"}_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.png`;
-        
-        // Télécharger localement d'abord (pour test)
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-
-        alert(`✅ Facture PNG téléchargée : ${filename}\n\n📝 Note: Pour Google Drive, vous pouvez maintenant glisser-déposer ce fichier dans votre Drive !`);
-
-      }, 'image/png', 0.95);
-
+      
+      return new Promise((resolve) => {
+        canvas.toBlob(resolve, 'image/png', 0.95);
+      });
     } catch (error) {
-      console.error('❌ Erreur sauvegarde Google Drive:', error);
-      alert("❌ Erreur lors de la création de la facture PNG");
+      console.error('Erreur génération PNG:', error);
+      return null;
+    }
+  };
+  
+  // Fonction pour uploader sur Google Drive
+  const uploadToGoogleDrive = async (blob, filename, accessToken) => {
+    try {
+      const metadata = {
+        name: filename,
+        parents: ['1hZsPW8TeZ6s3AlLesb1oLQNbI3aJY3p-'] // Dossier MyComfort
+      };
+      
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      form.append('file', blob);
+      
+      const response = await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: form
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      const result = await response.json();
+      return { success: true, fileId: result.id, webViewLink: result.webViewLink };
+      
+    } catch (error) {
+      return { success: false, error: error.message };
     }
   };
 
