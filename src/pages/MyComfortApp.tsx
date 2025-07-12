@@ -1,16 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { Download, Send, Save } from 'lucide-react';
+import { Download, Send, Save, FileText, Eye } from 'lucide-react';
 
 // Components
-import { HeaderNav } from '../components/HeaderNav';
-import { StatusBar } from '../components/StatusBar';
-import { ClientDropdown } from '../components/ClientDropdown';
-import { InvoiceDropdown } from '../components/InvoiceDropdown';
-import { ProductForm } from '../components/ProductForm';
-import { ProductTable } from '../components/ProductTable';
-import { TotalsBlock } from '../components/TotalsBlock';
-import { SignaturePad } from '../components/SignaturePad';
-import { InvoicePreview } from '../components/InvoicePreview';
+import HeaderNav from '../components/HeaderNav';
+import StatusBar from '../components/StatusBar';
+import ClientDropdown from '../components/ClientDropdown';
+import InvoiceDropdown from '../components/InvoiceDropdown';
+import ProductForm from '../components/ProductForm';
+import ProductTable from '../components/ProductTable';
+import TotalsBlock from '../components/TotalsBlock';
+import SignaturePad from '../components/SignaturePad';
+import InvoicePreview from '../components/InvoicePreview';
 
 // Utils
 import { 
@@ -51,6 +51,24 @@ export const MyComfortApp: React.FC = () => {
     signature: null,
     lastSaved: new Date()
   });
+
+  // Configuration des onglets pour HeaderNav
+  const tabs = [
+    {
+      id: 'form' as const,
+      label: '📝 FORMULAIRE',
+      bgColor: 'bg-green-600',
+      color: 'text-white',
+      icon: FileText
+    },
+    {
+      id: 'preview' as const,
+      label: '👁️ APERÇU',
+      bgColor: 'bg-green-600',
+      color: 'text-white',
+      icon: Eye
+    }
+  ];
 
   // Handlers
   const handleTabChange = (tab: 'form' | 'preview') => {
@@ -176,8 +194,9 @@ export const MyComfortApp: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
       {/* Navigation */}
       <HeaderNav 
-        activeTab={state.activeTab} 
-        onTabChange={handleTabChange} 
+        tabs={tabs}
+        activeTab={state.activeTab}
+        setActiveTab={handleTabChange}
       />
 
       {/* Barre de statut */}
