@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
+import { Save, Download } from "lucide-react";
 
 // Import des utilitaires PDF
 import { downloadPDF as generatePDF } from '../utils/pdfGenerator';
@@ -59,22 +60,21 @@ export default function MyComfortApp() {
 
   const total = produits.reduce((acc, p) => acc + p.prix * p.quantite, 0);
 
-  // Fonction de sauvegarde locale simple
+  // Fonctions de sauvegarde et PDF
   const saveLocal = () => {
     const facture = {
       client,
       produits,
-      total: produits.reduce((acc, p) => acc + p.prix * p.quantite, 0),
+      total,
       date: new Date().toISOString(),
     };
     localStorage.setItem("derniereFacture", JSON.stringify(facture));
     alert("✅ Facture enregistrée dans le navigateur !");
   };
 
-  // Fonction de téléchargement PDF simple
   const downloadPDF = () => {
     const doc = new jsPDF();
-    doc.text(`Facture MyConfort\nClient : ${client.nom || "-"}\nDate : ${new Date().toLocaleDateString('fr-FR')}\nTotal : ${produits.reduce((acc, p) => acc + p.prix * p.quantite, 0)}€`, 10, 10);
+    doc.text(`Facture MyConfort\nClient : ${client.nom || "-"}\nDate : ${new Date().toLocaleDateString('fr-FR')}\nTotal : ${total}€`, 10, 10);
     produits.forEach((p, i) => {
       doc.text(
         `${i + 1}. ${p.nom} (${p.taille}) x${p.quantite} = ${p.prix * p.quantite}€`,
