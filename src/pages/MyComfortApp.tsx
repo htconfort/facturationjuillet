@@ -24,9 +24,9 @@ import {
   InvoiceItem, 
   mockClients, 
   mockInvoices,
-  createNewInvoice 
+  createNewInvoice,
+  calculateTotals
 } from '../utils/data';
-import { calculateTotals } from '../utils/calculations';
 
 // Types
 interface AppState {
