@@ -1,5 +1,5 @@
 import React from 'react';
-import { Invoice } from '../utils/invoiceStorage';
+import { Invoice } from '../types';
 
 interface InvoicePreviewProps {
   invoice: Invoice;
@@ -55,12 +55,12 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             FACTURÉ À
           </h3>
           <div className="text-gray-700 space-y-1">
-            <p className="font-semibold">{invoice.clientName}</p>
-            {invoice.clientAddress.split('\n').map((line, index) => (
+            <p className="font-semibold">{invoice.client.name}</p>
+            {invoice.client.address.split('\n').map((line, index) => (
               <p key={index}>{line}</p>
             ))}
-            {invoice.clientPhone && <p>Tél: {invoice.clientPhone}</p>}
-            {invoice.clientEmail && <p>Email: {invoice.clientEmail}</p>}
+            {invoice.client.phone && <p>Tél: {invoice.client.phone}</p>}
+            {invoice.client.email && <p>Email: {invoice.client.email}</p>}
           </div>
         </div>
       </div>
@@ -97,7 +97,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                   {item.unitPrice.toFixed(2)} €
                 </td>
                 <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-gray-800">
-                  {item.total.toFixed(2)} €
+                  {(item.quantity * item.unitPrice).toFixed(2)} €
                 </td>
               </tr>
             ))}
