@@ -1,13 +1,46 @@
 import React, { useState, useRef } from 'react';
 import { Save, Download, Users, Package, Phone, Mail, FileText, Eye } from 'lucide-react';
 
+// Types TypeScript
+interface InvoiceItem {
+  id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  priceTTC: number;
+}
+
+interface ClientInfo {
+  name: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  phone: string;
+  email: string;
+  siret: string;
+}
+
+interface CurrentInvoice {
+  number: string;
+  date: string;
+  items: InvoiceItem[];
+  eventLocation: string;
+}
+
+// Déclaration globale pour html2canvas
+declare global {
+  interface Window {
+    html2canvas: any;
+  }
+}
+
 function App() {
   // ⭐ REF pour PNG
   const invoiceRef = useRef<HTMLDivElement>(null);
   
   // États pour l'application
-  const [currentView, setCurrentView] = useState<'form' | 'preview'>('form');
-  const [currentInvoice, setCurrentInvoice] = useState({
+  const [currentView, setCurrentView] = useState<'form' | 'preview'>('preview');
+  const [currentInvoice, setCurrentInvoice] = useState<CurrentInvoice>({
     number: '2025-866',
     date: '2025-07-11',
     items: [
@@ -17,7 +50,7 @@ function App() {
     eventLocation: 'Salon de l\'habitat Paris'
   });
   
-  const [clientInfo, setClientInfo] = useState({
+  const [clientInfo, setClientInfo] = useState<ClientInfo>({
     name: 'Johan Priem',
     address: '123 Rue de la République',
     postalCode: '34000',
@@ -34,11 +67,11 @@ function App() {
     setTimeout(() => setNotification(''), 3000);
   };
 
-  const calculatePriceHT = (priceTTC: number) => Math.round((priceTTC / 1.2) * 100) / 100;
-  const calculateTotal = () => currentInvoice.items.reduce((total, item) => total + (item.priceTTC * item.quantity), 0);
+  const calculatePriceHT = (priceTTC: number): number => Math.round((priceTTC / 1.2) * 100) / 100;
+  const calculateTotal = (): number => currentInvoice.items.reduce((total, item) => total + (item.priceTTC * item.quantity), 0);
 
-  // ⭐ FONCTION PNG
-  const generatePNG = async () => {
+  // ⭐ FONCTION PNG avec TypeScript
+  const generatePNG = async (): Promise<void> => {
     try {
       showNotification('🎨 Génération PNG...');
       
@@ -49,12 +82,12 @@ function App() {
       }
 
       // Vérifier que html2canvas est disponible
-      if (!(window as any).html2canvas) {
+      if (!window.html2canvas) {
         showNotification('❌ Erreur: html2canvas non chargé');
         return;
       }
 
-      const canvas = await (window as any).html2canvas(element, {
+      const canvas = await window.html2canvas(element, {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
@@ -63,7 +96,12 @@ function App() {
         height: element.scrollHeight
       });
 
-      canvas.toBlob((blob: Blob) => {
+      canvas.toBlob((blob: Blob | null) => {
+        if (!blob) {
+          showNotification('❌ Erreur création blob');
+          return;
+        }
+
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -83,7 +121,7 @@ function App() {
     }
   };
 
-  const saveInvoice = () => {
+  const saveInvoice = (): void => {
     showNotification('💾 Facture sauvegardée...');
     
     // Génération PNG automatique
