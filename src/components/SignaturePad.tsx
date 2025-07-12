@@ -1,19 +1,12 @@
 import React from 'react';
 
-const SignaturePad = ({ signatureMode, signaturePaths, typedSignature, setTypedSignature, clearSignature }) => (
-  <div>
-    {signatureMode === 'draw' ? (
-      <div className="border-2 border-dashed rounded-lg p-4 bg-white">
-        {/* Ici tu ajoutes la logique de dessin */}
-        <div>(Zone dessin signature à implémenter)</div>
-        <button onClick={clearSignature}>Effacer</button>
-      </div>
-    ) : (
-      <div className="border-2 border-dashed rounded-lg p-4 bg-white">
-        <input type="text" value={typedSignature} onChange={e => setTypedSignature(e.target.value)} placeholder="Tapez votre nom" />
-        <button onClick={clearSignature}>Effacer</button>
-      </div>
-    )}
+const InvoicePreview = React.forwardRef(({ currentInvoice, clientInfo, ...props }, ref) => (
+  <div ref={ref} className="bg-white rounded-lg shadow-lg max-w-4xl mx-auto overflow-hidden">
+    <div className="p-8 text-white" style={{ backgroundColor: '#477A0C' }}>
+      <h1 className="text-4xl font-bold mb-2">MYCONFORT</h1>
+      {/* ... autres infos */}
+    </div>
+    {/* ... reste du preview */}
   </div>
-);
-export default SignaturePad;
+));
+export default InvoicePreview;
