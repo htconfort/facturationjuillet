@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
 
+// Import des utilitaires PDF
+import { downloadPDF as generatePDF } from '../utils/pdfGenerator';
+import { Invoice } from '../utils/data';
+
 export default function MyComfortApp() {
   // === Formulaire client ===
   const [client, setClient] = useState({
@@ -53,6 +57,78 @@ export default function MyComfortApp() {
   };
 
   const total = produits.reduce((acc, p) => acc + p.prix * p.quantite, 0);
+
+  // Fonction de sauvegarde locale améliorée
+  const saveLocal = () => {
+    try {
+      // Créer l'objet facture
+      const facture = {
+        id: `FAC-${Date.now()}`,
+        invoiceNumber: `FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`,
+        date: new Date().toLocaleDateString('fr-FR'),
+        clientName: client.nom,
+        clientAddress: `${client.adresse}\n${client.codePostal} ${client.ville}`,
+        clientPhone: client.telephone,
+        clientEmail: client.email,
+        items: produits.map(p => ({
+          id: Date.now().toString() + Math.random(),
+          description: p.nom,
+          quantity: p.quantite,
+          unitPrice: p.prix,
+          total: p.prix * p.quantite
+        })),
+        subtotal: total / 1.2, // Prix HT (en supposant TVA 20%)
+        tax: total - (total / 1.2), // TVA
+        total: total
+      };
+
+      // Récupérer les factures existantes
+      const facturesExistantes = JSON.parse(localStorage.getItem("factures") || "[]");
+      
+      // Ajouter la nouvelle facture
+      facturesExistantes.push(facture);
+      
+      // Sauvegarder le tableau mis à jour
+      localStorage.setItem("factures", JSON.stringify(facturesExistantes));
+      
+      alert(`✅ Facture ${facture.invoiceNumber} enregistrée ! Total: ${facturesExistantes.length} facture(s) sauvegardée(s).`);
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      alert("❌ Erreur lors de la sauvegarde");
+    }
+  };
+
+  // Fonction de téléchargement PDF
+  const downloadPDF = async () => {
+    try {
+      // Créer l'objet facture pour le PDF
+      const invoiceForPDF: Invoice = {
+        id: `FAC-${Date.now()}`,
+        invoiceNumber: `FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`,
+        date: new Date().toLocaleDateString('fr-FR'),
+        clientName: client.nom,
+        clientAddress: `${client.adresse}\n${client.codePostal} ${client.ville}`,
+        clientPhone: client.telephone,
+        clientEmail: client.email,
+        items: produits.map(p => ({
+          id: Date.now().toString() + Math.random(),
+          description: p.nom,
+          quantity: p.quantite,
+          unitPrice: p.prix,
+          total: p.prix * p.quantite
+        })),
+        subtotal: total / 1.2,
+        tax: total - (total / 1.2),
+        total: total
+      };
+
+      await generatePDF(invoiceForPDF);
+      alert("✅ PDF téléchargé avec succès !");
+    } catch (error) {
+      console.error('Erreur PDF:', error);
+      alert("❌ Erreur lors de la génération du PDF");
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-[#f7f8f5] min-h-screen">
@@ -249,6 +325,26 @@ export default function MyComfortApp() {
         <div className="mb-2"><span className="font-semibold">Adresse :</span> {client.adresse || <span className="text-gray-400">Non renseigné</span>}</div>
         <div className="mb-2"><span className="font-semibold">Produits :</span> {produits.length} sélectionné(s)</div>
         <div className="mb-2"><span className="font-semibold">Total TTC :</span> <span className="text-xl text-green-700 font-bold">{total} €</span></div>
+        
+        {/* Boutons d'action */}
+        <div className="flex gap-3 mt-6">
+          <button
+            className="bg-blue-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-blue-800 transition-colors"
+            onClick={saveLocal}
+            disabled={!client.nom || produits.length === 0}
+          >
+            <Save className="w-4 h-4" />
+            💾 Enregistrer localement
+          </button>
+          <button
+            className="bg-green-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-green-800 transition-colors"
+            onClick={downloadPDF}
+            disabled={!client.nom || produits.length === 0}
+          >
+            <Download className="w-4 h-4" />
+            🖨️ Télécharger PDF
+          </button>
+        </div>
       </div>
     </div>
   );
