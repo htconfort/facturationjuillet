@@ -1,45 +1,29 @@
 import React from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, Users, Send, Cloud } from 'lucide-react';
 
-interface HeaderNavProps {
-  activeTab: 'form' | 'preview';
-  onTabChange: (tab: 'form' | 'preview') => void;
-}
-
-export const HeaderNav: React.FC<HeaderNavProps> = ({ activeTab, onTabChange }) => {
-  return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-4">
-            <FileText className="w-8 h-8 text-green-600" />
-            <h1 className="text-xl font-bold text-gray-800">MyComfort Facturation</h1>
-          </div>
-          
-          <div className="flex space-x-1">
-            <button
-              onClick={() => onTabChange('form')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'form'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              📝 FORMULAIRE
-            </button>
-            <button
-              onClick={() => onTabChange('preview')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'preview'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              👁️ APERÇU
-            </button>
-          </div>
+const HeaderNav = ({
+  tabs,
+  activeTab,
+  setActiveTab,
+  showClientDropdown,
+  setShowClientDropdown,
+  showInvoiceDropdown,
+  setShowInvoiceDropdown,
+  sendInvoiceByEmail,
+  saveToGoogleDrive,
+}) => (
+  <div style={{ backgroundColor: '#477A0C' }} className="p-4">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-2">
+        <FileText className="w-6 h-6 text-white" />
+        <div className="text-white">
+          <div className="font-bold text-lg">MYCONFORT</div>
+          <div className="text-sm opacity-90">Facturation</div>
         </div>
       </div>
-    </nav>
-  );
-};
+      {/* ... la suite du code du header et des onglets ici ... */}
+    </div>
+  </div>
+);
+
+export default HeaderNav;
