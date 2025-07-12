@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
-import { Save, Download } from "lucide-react";
+import { Save, Download, Cloud } from "lucide-react";
 
 // Import des utilitaires PDF
 import { downloadPDF as generatePDF } from '../utils/pdfGenerator';
 import { Invoice } from '../utils/data';
+
+// Déclaration pour html2canvas (déjà inclus via CDN)
+declare global {
+  interface Window {
+    html2canvas: any;
+  }
+}
 
 export default function MyComfortApp() {
   // === Formulaire client ===
@@ -83,6 +90,142 @@ export default function MyComfortApp() {
       );
     });
     doc.save(`Facture-${client.nom || "client"}.pdf`);
+  };
+
+  // Fonction pour sauvegarder sur Google Drive en PNG
+  const saveToGoogleDrive = async () => {
+    try {
+      // Vérifier si html2canvas est disponible
+      if (!window.html2canvas) {
+        alert("❌ html2canvas n'est pas chargé. Veuillez recharger la page.");
+        return;
+      }
+
+      // Créer un élément temporaire avec la facture
+      const factureElement = createInvoiceElement();
+      document.body.appendChild(factureElement);
+
+      // Capturer en PNG avec html2canvas
+      const canvas = await window.html2canvas(factureElement, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Haute qualité
+        useCORS: true,
+        allowTaint: true
+      });
+
+      // Supprimer l'élément temporaire
+      document.body.removeChild(factureElement);
+
+      // Convertir en blob PNG
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert("❌ Erreur lors de la création de l'image");
+          return;
+        }
+
+        // Créer un nom de fichier
+        const filename = `Facture_${client.nom || "client"}_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.png`;
+        
+        // Télécharger localement d'abord (pour test)
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        alert(`✅ Facture PNG téléchargée : ${filename}\n\n📝 Note: Pour Google Drive, vous pouvez maintenant glisser-déposer ce fichier dans votre Drive !`);
+
+      }, 'image/png', 0.95);
+
+    } catch (error) {
+      console.error('❌ Erreur sauvegarde Google Drive:', error);
+      alert("❌ Erreur lors de la création de la facture PNG");
+    }
+  };
+
+  // Fonction pour créer l'élément HTML de la facture
+  const createInvoiceElement = () => {
+    const factureDiv = document.createElement('div');
+    factureDiv.style.cssText = `
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+      width: 800px;
+      background: white;
+      padding: 40px;
+      font-family: Arial, sans-serif;
+      color: #333;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    `;
+
+    factureDiv.innerHTML = `
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #477A0C; font-size: 36px; margin: 0;">MYCOMFORT</h1>
+        <p style="color: #666; margin: 5px 0;">Solutions de confort</p>
+        <h2 style="color: #477A0C; font-size: 28px; margin: 20px 0;">FACTURE</h2>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+        <div>
+          <h3 style="color: #477A0C; border-bottom: 2px solid #477A0C; padding-bottom: 5px;">ÉMETTEUR</h3>
+          <p><strong>MyComfort SARL</strong></p>
+          <p>123 Rue de la Paix</p>
+          <p>75001 Paris</p>
+          <p>Tél: 01 23 45 67 89</p>
+          <p>Email: contact@mycomfort.fr</p>
+        </div>
+        <div>
+          <h3 style="color: #477A0C; border-bottom: 2px solid #477A0C; padding-bottom: 5px;">FACTURÉ À</h3>
+          <p><strong>${client.nom || "Client"}</strong></p>
+          <p>${client.adresse || ""}</p>
+          <p>${client.ville || ""} ${client.codePostal || ""}</p>
+          <p>Tél: ${client.telephone || ""}</p>
+          <p>Email: ${client.email || ""}</p>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
+        <p><strong>Facture N°:</strong> FAC-${Date.now().toString().slice(-6)}</p>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+        <thead>
+          <tr style="background: #477A0C; color: white;">
+            <th style="border: 1px solid #477A0C; padding: 12px; text-align: left;">Description</th>
+            <th style="border: 1px solid #477A0C; padding: 12px; text-align: center;">Qté</th>
+            <th style="border: 1px solid #477A0C; padding: 12px; text-align: right;">Prix unitaire</th>
+            <th style="border: 1px solid #477A0C; padding: 12px; text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${produits.map((p, i) => `
+            <tr style="background: ${i % 2 === 0 ? '#f9f9f9' : 'white'};">
+              <td style="border: 1px solid #ddd; padding: 10px;">${p.nom} (${p.taille})</td>
+              <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${p.quantite}</td>
+              <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${p.prix}€</td>
+              <td style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold;">${p.prix * p.quantite}€</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div style="text-align: right; margin-bottom: 30px;">
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; display: inline-block; min-width: 300px;">
+          <p style="margin: 5px 0;"><strong>Sous-total HT:</strong> ${(total / 1.2).toFixed(2)}€</p>
+          <p style="margin: 5px 0;"><strong>TVA (20%):</strong> ${(total - total / 1.2).toFixed(2)}€</p>
+          <p style="margin: 15px 0 0 0; font-size: 18px; color: #477A0C;"><strong>TOTAL TTC: ${total}€</strong></p>
+        </div>
+      </div>
+
+      <div style="text-align: center; border-top: 1px solid #ddd; padding-top: 20px; color: #666; font-size: 12px;">
+        <p>Facture acquittée - Merci de votre confiance</p>
+        <p>SIRET: 123 456 789 00012 - TVA non applicable, art. 293 B du CGI</p>
+      </div>
+    `;
+
+    return factureDiv;
   };
 
   return (
@@ -298,6 +441,14 @@ export default function MyComfortApp() {
           >
             <Download className="w-4 h-4" />
             🖨️ Télécharger PDF
+          </button>
+          <button
+            className="bg-purple-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-purple-800 transition-colors"
+            onClick={saveToGoogleDrive}
+            disabled={!client.nom || produits.length === 0}
+          >
+            <Cloud className="w-4 h-4" />
+            ☁️ Sauver PNG
           </button>
         </div>
       </div>
