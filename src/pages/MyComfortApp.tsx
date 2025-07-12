@@ -1,132 +1,77 @@
 import React, { useState } from "react";
 
-// ======================
 // Types
-// ======================
-type Client = {
+interface ClientInfo {
   name: string;
   address: string;
-  postalCode: string;
-  city: string;
   phone: string;
   email: string;
-  siret?: string;
-  lodgingType?: string;
-};
+}
 
-// ======================
-// Composant Formulaire Client
-// ======================
+// Formulaire Client
 const ClientForm: React.FC<{
-  client: Client;
-  onChange: (client: Client) => void;
-}> = ({ client, onChange }) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    onChange({ ...client, [name]: value });
-  };
-
-  return (
-    <form className="grid grid-cols-1 gap-4 bg-white p-6 rounded shadow">
+  client: ClientInfo;
+  onChange: (client: ClientInfo) => void;
+}> = ({ client, onChange }) => (
+  <div style={{ background: "#F2EFE2", borderRadius: 12, padding: 24, marginBottom: 24 }}>
+    <h2 style={{ fontWeight: "bold", marginBottom: 12, color: "#477A0C" }}>Informations client</h2>
+    <div style={{ display: "grid", gap: 12 }}>
       <input
         type="text"
-        name="name"
-        value={client.name}
-        onChange={handleChange}
         placeholder="Nom complet"
-        className="border px-3 py-2 rounded"
-        required
+        value={client.name}
+        onChange={e => onChange({ ...client, name: e.target.value })}
+        style={{ padding: 8, borderRadius: 6, border: "1px solid #B9D871" }}
       />
       <input
         type="text"
-        name="address"
-        value={client.address}
-        onChange={handleChange}
         placeholder="Adresse"
-        className="border px-3 py-2 rounded"
-        required
-      />
-      <input
-        type="text"
-        name="postalCode"
-        value={client.postalCode}
-        onChange={handleChange}
-        placeholder="Code postal"
-        className="border px-3 py-2 rounded"
-        required
-      />
-      <input
-        type="text"
-        name="city"
-        value={client.city}
-        onChange={handleChange}
-        placeholder="Ville"
-        className="border px-3 py-2 rounded"
-        required
+        value={client.address}
+        onChange={e => onChange({ ...client, address: e.target.value })}
+        style={{ padding: 8, borderRadius: 6, border: "1px solid #B9D871" }}
       />
       <input
         type="tel"
-        name="phone"
-        value={client.phone}
-        onChange={handleChange}
         placeholder="Téléphone"
-        className="border px-3 py-2 rounded"
-        required
+        value={client.phone}
+        onChange={e => onChange({ ...client, phone: e.target.value })}
+        style={{ padding: 8, borderRadius: 6, border: "1px solid #B9D871" }}
       />
       <input
         type="email"
-        name="email"
+        placeholder="E-mail"
         value={client.email}
-        onChange={handleChange}
-        placeholder="Email"
-        className="border px-3 py-2 rounded"
-        required
+        onChange={e => onChange({ ...client, email: e.target.value })}
+        style={{ padding: 8, borderRadius: 6, border: "1px solid #B9D871" }}
       />
-      <input
-        type="text"
-        name="siret"
-        value={client.siret || ""}
-        onChange={handleChange}
-        placeholder="SIRET (optionnel)"
-        className="border px-3 py-2 rounded"
-      />
-      <select
-        name="lodgingType"
-        value={client.lodgingType || ""}
-        onChange={handleChange}
-        className="border px-3 py-2 rounded"
-      >
-        <option value="">Type de logement</option>
-        <option>Appartement</option>
-        <option>Maison</option>
-        <option>Studio</option>
-        <option>Autre</option>
-      </select>
-    </form>
-  );
-};
+    </div>
+  </div>
+);
 
-// ======================
-// Page Principale
-// ======================
+// Page principale
 const MyComfortApp: React.FC = () => {
-  const [client, setClient] = useState<Client>({
+  const [client, setClient] = useState<ClientInfo>({
     name: "",
     address: "",
-    postalCode: "",
-    city: "",
     phone: "",
-    email: "",
-    siret: "",
-    lodgingType: "",
+    email: ""
   });
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-2xl font-bold mb-6">Formulaire client</h1>
+    <div style={{ maxWidth: 500, margin: "40px auto", padding: 24, background: "#fff", borderRadius: 16 }}>
+      <h1 style={{ fontSize: 28, fontWeight: "bold", color: "#477A0C", marginBottom: 24 }}>
+        Formulaire de Facture - MyConfort
+      </h1>
       <ClientForm client={client} onChange={setClient} />
-      {/* Aperçu des valeurs remplies */}
-      <pre className="mt-8 bg-gray-100 p-4 rounded">
+      <pre style={{
+        background: "#F2EFE2",
+        padding: 16,
+        borderRadius: 8,
+        marginTop: 16,
+        fontSize: 14,
+        color: "#333",
+        fontFamily: "monospace"
+      }}>
         {JSON.stringify(client, null, 2)}
       </pre>
     </div>
