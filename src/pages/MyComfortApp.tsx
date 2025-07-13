@@ -46,16 +46,6 @@ export default function MyComfortApp() {
   const [catSel, setCatSel] = useState("");
   const [tailleSel, setTailleSel] = useState("");
   const [qteSel, setQteSel] = useState(1);
-  const [produitTrouve, setProduitTrouve] = useState(null);
-  const [produits, setProduits] = useState([]);
-
-  // État de connexion Google Drive
-  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-
-  // Initialiser EmailJS au chargement
-  useEffect(() => {
-    initializeEmailJS();
     console.log('✅ Service email HT Confort initialisé!');
   }, []);
 
