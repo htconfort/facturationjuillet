@@ -3,6 +3,9 @@ import jsPDF from "jspdf";
 import { Save, Download, Cloud, CloudOff } from "lucide-react";
 import { initializeEmailJS } from '../utils/emailService';
 import { createHTConfortInvoice, testHTConfortInvoice, SimpleClient, SimpleItem } from '../utils/invoiceGenerator';
+import { supabase } from '../utils/supabaseClient';
+import { clientService, invoiceService, productService, testSupabaseConnection } from '../utils/supabaseService';
+import type { Client, Invoice as SupabaseInvoice, Product } from '../utils/supabaseService';
 
 // Import des utilitaires PDF
 import { downloadPDF as generatePDF } from '../utils/pdfGenerator';
@@ -53,6 +56,12 @@ export default function MyComfortApp() {
   // État de connexion Google Drive
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  
+  // États Supabase
+  const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
+  const [savedInvoices, setSavedInvoices] = useState<SupabaseInvoice[]>([]);
+  const [savedClients, setSavedClients] = useState<Client[]>([]);
+  const [supabaseProducts, setSupabaseProducts] = useState<Product[]>([]);
 
   // Initialiser EmailJS au chargement
   useEffect(() => {
@@ -68,9 +77,49 @@ export default function MyComfortApp() {
     } catch (error) {
       console.error('❌ Erreur test facture:', error);
     }
-    
-    console.log('✅ Service email HT Confort initialisé!');
+    initializeSupabase();
   }, []);
+  
+  // Initialiser Supabase
+  const initializeSupabase = async () => {
+    try {
+      console.log('🔄 Test connexion Supabase...');
+      const isConnected = await testSupabaseConnection();
+      setIsSupabaseConnected(isConnected);
+      
+      if (isConnected) {
+        console.log('✅ Supabase connecté !');
+        await loadSupabaseData();
+      } else {
+        console.warn('⚠️ Supabase non connecté');
+      }
+    } catch (error) {
+      console.error('❌ Erreur initialisation Supabase:', error);
+    }
+  };
+  
+  // Charger les données depuis Supabase
+  const loadSupabaseData = async () => {
+    try {
+      // Charger les factures
+      const invoices = await invoiceService.getAll();
+      setSavedInvoices(invoices);
+      console.log(`📄 ${invoices.length} factures chargées`);
+      
+      // Charger les clients
+      const clients = await clientService.getAll();
+      setSavedClients(clients);
+      console.log(`👥 ${clients.length} clients chargés`);
+      
+      // Charger les produits
+      const products = await productService.getAll();
+      setSupabaseProducts(products);
+      console.log(`🛍️ ${products.length} produits chargés`);
+      
+    } catch (error) {
+      console.error('❌ Erreur chargement données:', error);
+    }
+  };
 
   useEffect(() => {
     if (catSel && tailleSel) {
@@ -92,15 +141,69 @@ export default function MyComfortApp() {
   const total = produits.reduce((acc, p) => acc + p.prix * p.quantite, 0);
 
   // Fonctions de sauvegarde et PDF
-  const saveLocal = () => {
-    const facture = {
-      client,
-      produits,
-      total,
-      date: new Date().toISOString(),
-    };
-    localStorage.setItem("derniereFacture", JSON.stringify(facture));
-    alert("✅ Facture enregistrée dans le navigateur !");
+  const saveToSupabase = async () => {
+    if (!isSupabaseConnected) {
+      alert("⚠️ Supabase non connecté ! Impossible de sauvegarder.");
+      return;
+    }
+    
+    try {
+      alert("💾 Sauvegarde en cours...");
+      
+      // Créer ou récupérer le client
+      let clientId = null;
+      if (client.email) {
+        const existingClients = await clientService.search(client.email);
+        if (existingClients.length > 0) {
+          clientId = existingClients[0].id;
+        } else {
+          const newClient = await clientService.create({
+            name: client.nom,
+            email: client.email,
+            phone: client.telephone,
+            address: client.adresse,
+            city: client.ville,
+            postal_code: client.codePostal,
+            siret: client.siret
+          });
+          clientId = newClient.id;
+        }
+      }
+      
+      // Préparer les données de facture
+      const invoiceData = {
+        client_id: clientId,
+        client_name: client.nom,
+        client_address: `${client.adresse}\n${client.ville} ${client.codePostal}`,
+        client_phone: client.telephone,
+        client_email: client.email,
+        subtotal: total / 1.2,
+        tax: total - (total / 1.2),
+        total: total,
+        status: 'draft',
+        event_location: 'MyComfort - Solutions de confort'
+      };
+      
+      // Préparer les articles
+      const items = produits.map(p => ({
+        description: `${p.nom} (${p.taille})`,
+        quantity: p.quantite,
+        unit_price: p.prix,
+        total: p.prix * p.quantite
+      }));
+      
+      // Sauvegarder dans Supabase
+      const savedInvoice = await invoiceService.create(invoiceData, items);
+      
+      // Recharger les données
+      await loadSupabaseData();
+      
+      alert(`✅ Facture ${savedInvoice.invoice_number} sauvegardée dans Supabase !`);
+      
+    } catch (error) {
+      console.error('❌ Erreur sauvegarde Supabase:', error);
+      alert(`❌ Erreur: ${error.message}`);
+    }
   };
 
   const downloadPDF = () => {
@@ -755,12 +858,16 @@ export default function MyComfortApp() {
           {/* Boutons d'action principaux */}
           <div className="flex gap-3">
             <button
-              className="bg-blue-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-blue-800 transition-colors"
-              onClick={saveLocal}
+              className={`px-6 py-2 rounded font-bold flex items-center gap-2 transition-colors ${
+                isSupabaseConnected 
+                  ? 'bg-blue-700 hover:bg-blue-800 text-white' 
+                  : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+              }`}
+              onClick={saveToSupabase}
               disabled={!client.nom || produits.length === 0}
             >
               <Save className="w-4 h-4" />
-              💾 Enregistrer localement
+              💾 Sauvegarder Supabase
             </button>
             <button
               className="bg-green-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-green-800 transition-colors"
@@ -782,6 +889,46 @@ export default function MyComfortApp() {
               ☁️ Sauver PNG
             </button>
           </div>
+        </div>
+      </div>
+      
+      {/* SECTION FACTURES SAUVEGARDÉES */}
+      {isSupabaseConnected && savedInvoices.length > 0 && (
+        <div className="bg-white rounded-xl shadow p-7 mb-6 border">
+          <h2 className="text-xl font-bold mb-4 text-[#477A0C]">
+            📄 FACTURES SAUVEGARDÉES ({savedInvoices.length})
+          </h2>
+          <div className="grid gap-3">
+            {savedInvoices.slice(0, 5).map((invoice) => (
+              <div key={invoice.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <div className="font-semibold">{invoice.invoice_number}</div>
+                  <div className="text-sm text-gray-600">{invoice.client_name}</div>
+                  <div className="text-xs text-gray-500">{invoice.invoice_date}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-green-600">{invoice.total.toFixed(2)} €</div>
+                  <div className="text-xs text-gray-500">{invoice.status}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {savedInvoices.length > 5 && (
+            <div className="text-center mt-3 text-gray-500">
+              ... et {savedInvoices.length - 5} autres factures
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* INDICATEUR CONNEXION SUPABASE */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+          isSupabaseConnected 
+            ? 'bg-green-100 text-green-800 border border-green-200' 
+            : 'bg-red-100 text-red-800 border border-red-200'
+        }`}>
+          {isSupabaseConnected ? '✅ Supabase connecté' : '❌ Supabase déconnecté'}
         </div>
       </div>
     </div>
