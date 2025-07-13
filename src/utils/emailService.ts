@@ -6,7 +6,7 @@ import { getPDFBlob } from './pdfGenerator';
 const EMAILJS_CONFIG = {
   SERVICE_ID: 'service_ymw6jih',
   TEMPLATE_ID: 'template_yng4k8s',
-  PUBLIC_KEY: 'tCN-OmGBwlRhaGEw4'
+  PUBLIC_KEY: 'A--fD137SFPmUMUUvjz2m'
 };
 
 // Interface pour les paramètres d'email

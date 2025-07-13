@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import { Save, Download, Cloud, CloudOff } from "lucide-react";
+import { initializeEmailJS } from '../utils/emailService';
 
 // Import des utilitaires PDF
 import { downloadPDF as generatePDF } from '../utils/pdfGenerator';
@@ -52,6 +53,12 @@ export default function MyComfortApp() {
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
+  // Initialiser EmailJS au chargement
+  useEffect(() => {
+    initializeEmailJS();
+    console.log('✅ Service email HT Confort initialisé!');
+  }, []);
+
   useEffect(() => {
     if (catSel && tailleSel) {
       const prod = produitsCatalogue.find(p => p.categorie === catSel && p.taille === tailleSel);
@@ -94,6 +101,54 @@ export default function MyComfortApp() {
       );
     });
     doc.save(`Facture-${client.nom || "client"}.pdf`);
+  };
+
+  // Fonction d'envoi par email
+  const sendEmailPDF = async () => {
+    if (!client.email) {
+      alert("⚠️ Veuillez saisir l'email du client !");
+      return;
+    }
+
+    try {
+      alert("📧 Envoi de la facture par email...");
+      
+      // Import du service email
+      const { sendPDFByEmail } = await import('../utils/emailService');
+      
+      // Créer l'objet facture
+      const invoice = {
+        id: `FAC-${Date.now()}`,
+        invoiceNumber: `FAC-${Date.now().toString().slice(-6)}`,
+        date: new Date().toLocaleDateString('fr-FR'),
+        clientName: client.nom,
+        clientAddress: `${client.adresse}\n${client.ville} ${client.codePostal}`,
+        clientPhone: client.telephone,
+        clientEmail: client.email,
+        items: produits.map(p => ({
+          description: `${p.nom} (${p.taille})`,
+          quantity: p.quantite,
+          unitPrice: p.prix,
+          total: p.prix * p.quantite
+        })),
+        subtotal: total / 1.2,
+        tax: total - (total / 1.2),
+        total: total
+      };
+      
+      // Envoyer par email
+      const success = await sendPDFByEmail(invoice, client.email);
+      
+      if (success) {
+        alert(`✅ Facture envoyée par email à ${client.email} !`);
+      } else {
+        alert("❌ Erreur lors de l'envoi de l'email");
+      }
+      
+    } catch (error) {
+      console.error('❌ Erreur envoi email:', error);
+      alert(`❌ Erreur: ${error.message}`);
+    }
   };
 
   // Fonction de connexion/déconnexion Google Drive
@@ -544,6 +599,13 @@ export default function MyComfortApp() {
             }}
           >
             + SÉLECTIONNER
+          </button>
+          <button
+            className="bg-blue-700 text-white px-6 py-2 rounded font-bold flex items-center gap-2 hover:bg-blue-800 transition-colors"
+            onClick={sendEmailPDF}
+            disabled={!client.nom || produits.length === 0 || !client.email}
+          >
+            📧 Envoyer par Email
           </button>
         </div>
         {/* Affichage cartes produits */}
