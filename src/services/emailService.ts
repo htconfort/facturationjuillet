@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+<boltAction type="file" filePath="src/App.tsx" contentType="text/typescript">import React, { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { InvoiceHeader } from './components/InvoiceHeader';
 import { ClientSection } from './components/ClientSection';
@@ -8,15 +8,19 @@ import { InvoicesListModal } from './components/InvoicesListModal';
 import { ProductsListModal } from './components/ProductsListModal';
 import { PDFPreviewModal } from './components/PDFPreviewModal';
 import { PDFGuideModal } from './components/PDFGuideModal';
+import { EmailJSConfigurationModal } from './components/EmailJSConfigurationModal';
 import { GoogleDriveModal } from './components/GoogleDriveModal';
+import { SignaturePad } from './components/SignaturePad';
+import { EmailSender } from './components/EmailSender';
 import { InvoicePDF } from './components/InvoicePDF';
 import { Toast } from './components/ui/Toast';
 import { Invoice, Client, ToastType } from './types';
 import { generateInvoiceNumber } from './utils/calculations';
 import { saveClients, loadClients, saveDraft, loadDraft, saveClient, saveInvoice, loadInvoices, deleteInvoice } from './utils/storage';
-import { AdvancedPDFService } from './services/advancedPdfService'; // Keep this import
+import { AdvancedPDFService } from './services/advancedPdfService';
 import { GoogleDriveService } from './services/googleDriveService';
-// import { PDFService } from './services/pdfService'; // REMOVED: No longer needed, using AdvancedPDFService
+import { PDFService } from './services/pdfService';
+import { SeparatePdfEmailService } from './services/separatePdfEmailService'; // Import the new service
 
 function App() {
   const [invoice, setInvoice] = useState<Invoice>({
@@ -56,7 +60,9 @@ function App() {
   const [showProductsList, setShowProductsList] = useState(false);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [showPDFGuide, setShowPDFGuide] = useState(false);
+  const [showEmailJSConfig, setShowEmailJSConfig] = useState(false); // This modal is now redundant
   const [showGoogleDriveConfig, setShowGoogleDriveConfig] = useState(false);
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
   const [showInvoicePreview, setShowInvoicePreview] = useState(true);
   const [toast, setToast] = useState({
     show: false,
@@ -65,8 +71,6 @@ function App() {
   });
 
   // Ref pour la section d'aperçu de la facture à capturer pour le PDF
-  // NOTE: previewRef est toujours utilisé pour l'affichage de InvoicePDF,
-  // mais AdvancedPDFService génère le PDF à partir des données, pas du DOM.
   const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -185,15 +189,16 @@ function App() {
     };
   };
 
-  // 🟢 Helper universel pour générer le PDF Blob en utilisant AdvancedPDFService
+  // 🟢 Helper universel pour générer le PDF depuis l’aperçu (par ref)
   const generatePDFBlobFromPreview = async () => {
-    // AdvancedPDFService génère le PDF à partir des données de l'objet invoice,
-    // donc previewRef n'est pas directement utilisé ici pour la génération.
-    // Il est conservé pour l'affichage de l'aperçu HTML.
-    return await AdvancedPDFService.getPDFBlob(invoice);
+    if (!previewRef.current) {
+      showToast("Aperçu introuvable pour la génération du PDF", "error");
+      return null;
+    }
+    return await PDFService.generateInvoicePDF(invoice, previewRef);
   };
 
-  // 🟢 Handler pour télécharger le PDF en utilisant AdvancedPDFService
+  // 🟢 Handler pour télécharger le PDF (tous boutons/download)
   const handleDownloadPDF = async () => {
     const validation = validateMandatoryFields();
     if (!validation.isValid) {
@@ -204,7 +209,7 @@ function App() {
     handleSaveInvoice();
     showToast('Génération et téléchargement du PDF MYCONFORT en cours...', 'success');
     try {
-      await AdvancedPDFService.downloadPDF(invoice); // Utilise AdvancedPDFService
+      await PDFService.downloadPDF(invoice, previewRef);
       showToast(`PDF MYCONFORT téléchargé avec succès${invoice.signature ? ' (avec signature électronique)' : ''}`, 'success');
     } catch (error) {
       console.error('PDF download error:', error);
@@ -224,7 +229,7 @@ function App() {
     showToast('📤 Préparation de l\'envoi du PDF MYCONFORT...', 'success');
 
     try {
-      const pdfBlob = await generatePDFBlobFromPreview(); // Utilise AdvancedPDFService via generatePDFBlobFromPreview
+      const pdfBlob = await generatePDFBlobFromPreview();
       if (!pdfBlob) return;
 
       const base64Data = await new Promise<string>((resolve, reject) => {
@@ -274,17 +279,18 @@ function App() {
     setShowPDFPreview(true);
   };
 
-  // handlePrint function REMOVED as it relied on PDFService and html2pdf.js for printing from DOM
-  // const handlePrint = () => {
-  //   PDFService.printInvoice(previewRef, invoice.invoiceNumber);
-  // };
+  const handlePrint = () => {
+    PDFService.printInvoice(previewRef, invoice.invoiceNumber);
+  };
 
-  const handleEmailJSSuccess = (message: string) => {
+  // Updated to use SeparatePdfEmailService
+  const handleEmailSendSuccess = (message: string) => {
     handleSaveInvoice();
     showToast(message, 'success');
   };
 
-  const handleEmailJSError = (message: string) => {
+  // Updated to use SeparatePdfEmailService
+  const handleEmailSendError = (message: string) => {
     showToast(message, 'error');
   };
 
@@ -465,7 +471,7 @@ function App() {
             termsAccepted={invoice.termsAccepted}
             onTermsAcceptedChange={(accepted) => setInvoice(prev => ({ ...prev, termsAccepted: accepted }))}
             signature={invoice.signature}
-            // onShowSignaturePad={() => setShowSignaturePad(true)} // Removed
+            onShowSignaturePad={() => setShowSignaturePad(true)}
           />
         </div>
 
@@ -520,18 +526,18 @@ function App() {
           </div>
         </div>
 
-        {/* Communication & Actions Section - EmailSender removed */}
-        {/* <EmailSender
+        {/* Communication & Actions Section */}
+        <EmailSender
           invoice={invoice}
-          onSuccess={handleEmailJSSuccess}
-          onError={handleEmailJSError}
+          onSuccess={handleEmailSendSuccess}
+          onError={handleEmailSendError}
           onShowConfig={() => setShowGoogleDriveConfig(true)}
-          onShowEmailJSConfig={() => setShowEmailJSConfig(true)}
-        /> */}
+          // onShowEmailJSConfig prop removed as EmailJS config is now hardcoded in SeparatePdfEmailService
+        />
 
         {/* Hidden InvoicePDF for PDF generation */}
         <div style={{ display: 'none' }}>
-          <div ref={previewRef}>
+          <div ref={previewRef} className="facture-apercu"> {/* Added class for SeparatePdfEmailService */}
             <InvoicePDF invoice={invoice} isPreview={true} />
           </div>
         </div>
@@ -651,7 +657,7 @@ function App() {
         isOpen={showPDFPreview}
         onClose={() => setShowPDFPreview(false)}
         invoice={invoice}
-        previewRef={previewRef} // Still passed for the visual preview in the modal
+        previewRef={previewRef}
         handleDownloadPDF={handleDownloadPDF}
         handleSendPDF={handleSendPDF}
       />
@@ -659,31 +665,30 @@ function App() {
       <PDFGuideModal
         isOpen={showPDFGuide}
         onClose={() => setShowPDFGuide(false)}
-        onSuccess={handleEmailJSSuccess}
-        onError={handleEmailJSError}
+        onSuccess={handleEmailSendSuccess}
+        onError={handleEmailSendError}
       />
 
-      {/* EmailJSConfigurationModal removed */}
+      {/* EmailJSConfigurationModal is no longer needed as config is hardcoded in SeparatePdfEmailService */}
       {/* <EmailJSConfigurationModal
         isOpen={showEmailJSConfig}
         onClose={() => setShowEmailJSConfig(false)}
-        onSuccess={handleEmailJSSuccess}
-        onError={handleEmailJSError}
+        onSuccess={handleEmailSendSuccess}
+        onError={handleEmailSendError}
       /> */}
 
       <GoogleDriveModal
         isOpen={showGoogleDriveConfig}
         onClose={() => setShowGoogleDriveConfig(false)}
-        onSuccess={handleEmailJSSuccess}
-        onError={handleEmailJSError}
+        onSuccess={handleEmailSendSuccess}
+        onError={handleEmailSendError}
       />
 
-      {/* SignaturePad removed */}
-      {/* <SignaturePad
+      <SignaturePad
         isOpen={showSignaturePad}
         onClose={() => setShowSignaturePad(false)}
         onSave={handleSaveSignature}
-      /> */}
+      />
 
       <Toast
         message={toast.message}

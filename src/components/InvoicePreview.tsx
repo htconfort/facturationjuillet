@@ -1,5 +1,6 @@
 import React from 'react';
-import { Invoice } from '../utils/invoiceStorage';
+import { Invoice } from '../types';
+import { formatCurrency, calculateProductTotal } from '../utils/calculations';
 
 interface InvoicePreviewProps {
   invoice: Invoice;
@@ -10,152 +11,275 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   invoice, 
   className = "" 
 }) => {
+  // Calculer le total TTC
+  const totalTTC = invoice.products.reduce((sum, product) => {
+    return sum + calculateProductTotal(
+      product.quantity,
+      product.priceTTC,
+      product.discount,
+      product.discountType
+    );
+  }, 0);
+
+  // Calculer l'acompte et le montant restant
+  const acompteAmount = invoice.payment.depositAmount || 0;
+  const montantRestant = totalTTC - acompteAmount;
+
+  // Calculer les totaux pour l'affichage
+  const totalHT = totalTTC / (1 + (invoice.taxRate / 100));
+  const totalTVA = totalTTC - totalHT;
+  const totalDiscount = invoice.products.reduce((sum, product) => {
+    const originalTotal = product.priceTTC * product.quantity;
+    const discountedTotal = calculateProductTotal(
+      product.quantity,
+      product.priceTTC,
+      product.discount,
+      product.discountType
+    );
+    return sum + (originalTotal - discountedTotal);
+  }, 0);
+
   return (
-    <div className={`bg-white p-8 max-w-4xl mx-auto shadow-lg ${className}`}>
-      {/* En-tête avec logo et titre */}
-      <div className="flex justify-between items-start mb-8">
-        <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-green-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xl">MC</span>
-          </div>
+    <div 
+      id="facture-apercu" 
+      className={`facture-apercu ${className}`}
+    >
+      <div className="invoice-container">
+        {/* Header */}
+        <header className="header">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">MyComfort</h1>
-            <p className="text-gray-600">Solutions de confort</p>
+            <h1>MYCONFORT</h1>
+            <p className="subtitle">Facturation professionnelle avec signature électronique</p>
           </div>
-        </div>
-        <div className="text-right">
-          <h2 className="text-4xl font-bold text-green-600 mb-2">FACTURE</h2>
-          <div className="text-gray-700">
-            <p className="font-semibold">N° {invoice.invoiceNumber}</p>
-            <p>Date: {invoice.date}</p>
+          {invoice.signature && (
+            <div className="signed-badge">✓ SIGNÉE</div>
+          )}
+        </header>
+
+        {/* Main Information */}
+        <section className="main-info">
+          <div className="company-details">
+            <h3>MYCONFORT</h3>
+            <p>88 Avenue des Ternes</p>
+            <p>75017 Paris, France</p>
+            <p>SIRET: 824 313 530 00027</p>
+            <p>Tél: 04 68 50 41 45</p>
+            <p>Email: myconfort@gmail.com</p>
+            <p>Site web: https://www.htconfort.com</p>
           </div>
-        </div>
-      </div>
-
-      {/* Informations entreprise et client */}
-      <div className="grid grid-cols-2 gap-8 mb-8">
-        {/* Informations entreprise */}
-        <div>
-          <h3 className="font-bold text-gray-800 mb-3 text-lg border-b-2 border-green-600 pb-1">
-            ÉMETTEUR
-          </h3>
-          <div className="text-gray-700 space-y-1">
-            <p className="font-semibold">MyComfort SARL</p>
-            <p>123 Rue de la Paix</p>
-            <p>75001 Paris</p>
-            <p>Tél: 01 23 45 67 89</p>
-            <p>Email: contact@mycomfort.fr</p>
-            <p>SIRET: 123 456 789 00012</p>
-          </div>
-        </div>
-
-        {/* Informations client */}
-        <div>
-          <h3 className="font-bold text-gray-800 mb-3 text-lg border-b-2 border-green-600 pb-1">
-            FACTURÉ À
-          </h3>
-          <div className="text-gray-700 space-y-1">
-            <p className="font-semibold">{invoice.clientName}</p>
-            {invoice.clientAddress.split('\n').map((line, index) => (
-              <p key={index}>{line}</p>
-            ))}
-            {invoice.clientPhone && <p>Tél: {invoice.clientPhone}</p>}
-            {invoice.clientEmail && <p>Email: {invoice.clientEmail}</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Tableau des produits/services */}
-      <div className="mb-8">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-green-600 text-white">
-              <th className="border border-green-700 px-4 py-3 text-left font-semibold">
-                Description
-              </th>
-              <th className="border border-green-700 px-4 py-3 text-center font-semibold w-20">
-                Qté
-              </th>
-              <th className="border border-green-700 px-4 py-3 text-right font-semibold w-32">
-                Prix unitaire
-              </th>
-              <th className="border border-green-700 px-4 py-3 text-right font-semibold w-32">
-                Total HT
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoice.items.map((item, index) => (
-              <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                <td className="border border-gray-300 px-4 py-3 text-gray-800">
-                  {item.description}
-                </td>
-                <td className="border border-gray-300 px-4 py-3 text-center text-gray-800">
-                  {item.quantity}
-                </td>
-                <td className="border border-gray-300 px-4 py-3 text-right text-gray-800">
-                  {item.unitPrice.toFixed(2)} €
-                </td>
-                <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-gray-800">
-                  {item.total.toFixed(2)} €
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Totaux */}
-      <div className="flex justify-end mb-8">
-        <div className="w-80">
-          <div className="bg-gray-50 p-6 rounded-lg border">
-            <div className="space-y-3">
-              <div className="flex justify-between text-gray-700">
-                <span>Sous-total HT:</span>
-                <span className="font-semibold">{invoice.subtotal.toFixed(2)} €</span>
+          <div className="invoice-meta">
+            <div className="meta-item">
+              <span className="meta-label">N° Facture:</span>
+              <span className="meta-value">{invoice.invoiceNumber}</span>
+            </div>
+            <div className="meta-item">
+              <span className="meta-label">Date:</span>
+              <span className="meta-value">{new Date(invoice.invoiceDate).toLocaleDateString('fr-FR')}</span>
+            </div>
+            {invoice.eventLocation && (
+              <div className="meta-item">
+                <span className="meta-label">Lieu:</span>
+                <span className="meta-value">{invoice.eventLocation}</span>
               </div>
-              <div className="flex justify-between text-gray-700">
-                <span>TVA (20%):</span>
-                <span className="font-semibold">{invoice.tax.toFixed(2)} €</span>
-              </div>
-              <div className="border-t-2 border-green-600 pt-3">
-                <div className="flex justify-between text-xl font-bold text-green-600">
-                  <span>TOTAL TTC:</span>
-                  <span>{invoice.total.toFixed(2)} €</span>
+            )}
+          </div>
+        </section>
+
+        {/* Client Information */}
+        <div className="section-header">INFORMATIONS CLIENT</div>
+        <div className="client-grid">
+          <div className="client-field">
+            <span className="label">Nom complet</span>
+            <span className="value">{invoice.client.name}</span>
+          </div>
+          <div className="client-field">
+            <span className="label">Adresse</span>
+            <span className="value">{invoice.client.address}</span>
+          </div>
+          <div className="client-field">
+            <span className="label">Code postal</span>
+            <span className="value">{invoice.client.postalCode}</span>
+          </div>
+          <div className="client-field">
+            <span className="label">Ville</span>
+            <span className="value">{invoice.client.city}</span>
+          </div>
+          <div className="client-field">
+            <span className="label">Email</span>
+            <span className="value">{invoice.client.email}</span>
+          </div>
+          <div className="client-field">
+            <span className="label">Téléphone</span>
+            <span className="value">{invoice.client.phone}</span>
+          </div>
+        </div>
+
+        {/* Logistics Information */}
+        {invoice.delivery.method && (
+          <section className="info-section">
+            <div className="info-header">INFORMATIONS LOGISTIQUES</div>
+            <div className="info-row">
+              <span className="info-label">Mode de livraison:</span>
+              <span className="info-value">{invoice.delivery.method}</span>
+            </div>
+          </section>
+        )}
+
+        {/* Payment Information */}
+        <section className="info-section">
+          <div className="info-header payment">MODE DE RÈGLEMENT</div>
+          <div className="info-row">
+            <span className="info-label">Méthode de paiement:</span>
+            <span className="info-value">{invoice.payment.method || 'Non spécifié'}</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Signature client MYCONFORT:</span>
+            <span className="signature-status">
+              {invoice.signature ? '✓ Signature électronique enregistrée' : 'En attente de signature'}
+            </span>
+          </div>
+        </section>
+
+        {/* Products Section */}
+        <section className="products-section">
+          <div className="products-title">Produits & Tarification</div>
+          
+          {/* Signature Box */}
+          {invoice.signature && (
+            <div className="signature-box">
+              <div className="signature-label">SIGNATURE CLIENT</div>
+              <div className="signature-placeholder">
+                <img src={invoice.signature} alt="Signature électronique" style={{ maxHeight: '60px' }} />
+                
+                {/* Mention légale Article L224‑59 */}
+                <div className="mt-3 bg-red-600 border border-red-400 rounded-lg p-3">
+                  <div className="text-white">
+                    <div className="font-bold text-xs mb-1 flex items-center">
+                      <span className="mr-1">⚖️</span>
+                      Article L224‑59 du Code de la consommation
+                    </div>
+                    <div className="text-xs font-bold leading-relaxed">
+                      « Avant la conclusion de tout contrat entre un consommateur et un professionnel à l'occasion d'une foire, d'un salon […] le professionnel informe le consommateur qu'il ne dispose pas d'un délai de rétractation. »
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+          )}
 
-      {/* Signature et mentions légales */}
-      <div className="grid grid-cols-2 gap-8 mb-6">
-        <div>
-          <h4 className="font-semibold text-gray-800 mb-2">Conditions de paiement:</h4>
-          <p className="text-sm text-gray-600">
-            Paiement à 30 jours fin de mois<br/>
-            Aucun escompte pour paiement anticipé
-          </p>
-        </div>
-        <div className="text-right">
-          <div className="inline-block">
-            <p className="text-sm text-gray-600 mb-2">Signature électronique</p>
-            <div className="w-32 h-16 border-2 border-dashed border-gray-300 flex items-center justify-center">
-              <span className="text-gray-400 text-xs">MyComfort</span>
+          <table className="products-table">
+            <thead>
+              <tr>
+                <th>Quantité</th>
+                <th>PU HT</th>
+                <th>PU TTC</th>
+                <th>Remise</th>
+                <th>Total TTC</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoice.products.map((product, index) => {
+                const unitPriceHT = product.priceTTC / (1 + (invoice.taxRate / 100));
+                const totalProduct = calculateProductTotal(
+                  product.quantity,
+                  product.priceTTC,
+                  product.discount,
+                  product.discountType
+                );
+                
+                return (
+                  <tr key={index}>
+                    <td>{product.quantity}</td>
+                    <td>{formatCurrency(unitPriceHT)}</td>
+                    <td>{formatCurrency(product.priceTTC)}</td>
+                    <td>
+                      {product.discount > 0 ? (
+                        product.discountType === 'percent' ? 
+                          `${product.discount}%` : 
+                          formatCurrency(product.discount)
+                      ) : '-'}
+                    </td>
+                    <td>{formatCurrency(totalProduct)}</td>
+                  </tr>
+                );
+              })}
+              {invoice.products.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>
+                    Aucun produit ajouté
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          <div className="totals">
+            <div className="total-row">
+              <span className="total-label">Total HT:</span>
+              <span className="total-value">{formatCurrency(totalHT)}</span>
             </div>
+            <div className="total-row">
+              <span className="total-label">TVA ({invoice.taxRate}%):</span>
+              <span className="total-value">{formatCurrency(totalTVA)}</span>
+            </div>
+            {totalDiscount > 0 && (
+              <div className="total-row" style={{ color: '#e53e3e' }}>
+                <span className="total-label">Remise totale:</span>
+                <span className="total-value">-{formatCurrency(totalDiscount)}</span>
+              </div>
+            )}
+            <div className="total-row final-total">
+              <span className="total-label">TOTAL TTC:</span>
+              <span className="total-value">{formatCurrency(totalTTC)}</span>
+            </div>
+            
+            {/* Mention légale Article L224‑59 - Fond blanc sans encadré */}
+            <div className="legal-mention-simple">
+              <div className="legal-title">
+                ⚖️ Article L224‑59 du Code de la consommation
+              </div>
+              <div className="legal-text">
+                « Avant la conclusion de tout contrat entre un consommateur et un professionnel à l'occasion d'une foire, d'un salon […] le professionnel informe le consommateur qu'il ne dispose pas d'un délai de rétractation. »
+              </div>
+            </div>
+            {/* Acompte si applicable */}
+            {acompteAmount > 0 && (
+              <>
+                <div className="total-row" style={{ marginTop: '10px' }}>
+                  <span className="total-label">Acompte versé:</span>
+                  <span className="total-value" style={{ color: '#3182ce' }}>{formatCurrency(acompteAmount)}</span>
+                </div>
+                <div className="total-row" style={{ 
+                  backgroundColor: '#fff3cd', 
+                  padding: '8px', 
+                  borderRadius: '4px',
+                  marginTop: '5px',
+                  color: '#ff8c00'
+                }}>
+                  <span className="total-label" style={{ fontWeight: 'bold' }}>RESTE À PAYER:</span>
+                  <span className="total-value" style={{ fontWeight: 'bold' }}>{formatCurrency(montantRestant)}</span>
+                </div>
+              </>
+            )}
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Pied de page */}
-      <div className="border-t border-gray-300 pt-4 text-center">
-        <p className="text-sm text-gray-500 mb-1">
-          Facture acquittée - Merci de votre confiance
-        </p>
-        <p className="text-xs text-gray-400">
-          SIRET: 123 456 789 00012 - TVA non applicable, art. 293 B du CGI
-        </p>
+        {/* Notes if present */}
+        {invoice.invoiceNotes && (
+          <section className="info-section">
+            <div className="info-header">REMARQUES</div>
+            <p style={{ padding: '10px', fontSize: '13px' }}>{invoice.invoiceNotes}</p>
+          </section>
+        )}
+
+        {/* Footer */}
+        <footer className="footer">
+          <h3>🌸 MYCONFORT</h3>
+          <p>Merci pour votre confiance !</p>
+          <p>Votre spécialiste en matelas et literie de qualité</p>
+          <p>88 Avenue des Ternes, 75017 Paris - Tél: 04 68 50 41 45</p>
+          <p>Email: myconfort@gmail.com - SIRET: 824 313 530 00027</p>
+        </footer>
       </div>
     </div>
   );
