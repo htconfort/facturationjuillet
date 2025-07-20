@@ -47,39 +47,39 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
       : "w-full bg-white";
 
     return (
-      <div ref={ref} className={containerClass} style={{ fontFamily: 'Inter, sans-serif', color: '#080F0F' }}>
+      <div ref={ref} className={containerClass} style={{ fontFamily: 'Inter, sans-serif', color: '#080F0F', fontSize: '12px', lineHeight: '1.3' }}>
         {/* Bordure supérieure verte */}
-        <div className="h-1 bg-[#477A0C]"></div>
+        <div className="h-0.5 bg-[#477A0C]"></div>
         
         {/* En-tête de la facture */}
-        <div className="p-8 border-b-4 border-[#477A0C]">
+        <div className="p-4 border-b-2 border-[#477A0C]">
           <div className="flex justify-between items-start">
             {/* Logo et informations entreprise */}
             <div className="flex-1">
-              <div className="flex items-center mb-6">
-                <div className="bg-[#477A0C] rounded-full w-16 h-16 flex items-center justify-center text-[#F2EFE2] text-4xl mr-4">
+              <div className="flex items-center mb-3">
+                <div className="bg-[#477A0C] rounded-full w-10 h-10 flex items-center justify-center text-[#F2EFE2] text-2xl mr-3">
                   🌸
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black text-[#477A0C] tracking-tight">
+                  <h1 className="text-2xl font-black text-[#477A0C] tracking-tight">
                     MYCONFORT
                   </h1>
-                  <p className="text-lg font-medium" style={{ color: '#080F0F' }}>Facturation Professionnelle</p>
+                  <p className="text-sm font-medium" style={{ color: '#080F0F' }}>Facturation Professionnelle</p>
                   
                   {/* Mention légale Article L224‑59 - Fond blanc sans encadré */}
-                  <div className="mt-4">
-                    <div className="font-bold text-xs mb-1" style={{ color: '#080F0F' }}>
+                  <div className="mt-2">
+                    <div className="font-bold text-xs mb-0.5" style={{ color: '#080F0F' }}>
                       ⚖️ Article L224‑59 du Code de la consommation
                     </div>
-                    <div className="text-xs font-bold leading-tight" style={{ color: '#080F0F' }}>
+                    <div className="text-xs font-bold leading-tight" style={{ color: '#080F0F', fontSize: '10px' }}>
                       « Avant la conclusion de tout contrat entre un consommateur et un professionnel à l'occasion d'une foire, d'un salon […] le professionnel informe le consommateur qu'il ne dispose pas d'un délai de rétractation. »
                     </div>
                   </div>
                 </div>
               </div>
               
-              <div className="text-sm space-y-1" style={{ color: '#080F0F' }}>
-                <p className="font-semibold text-lg" style={{ color: '#080F0F' }}>MYCONFORT</p>
+              <div className="text-xs space-y-0.5" style={{ color: '#080F0F' }}>
+                <p className="font-semibold text-sm" style={{ color: '#080F0F' }}>MYCONFORT</p>
                 <p className="font-semibold">88 Avenue des Ternes</p>
                 <p>75017 Paris, France</p>
                 <p>SIRET: 824 313 530 00027</p>
@@ -91,14 +91,14 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
 
             {/* Informations facture */}
             <div className="text-right">
-              <div className="bg-[#477A0C] text-[#F2EFE2] px-8 py-4 rounded-lg mb-6">
-                <h2 className="text-2xl font-bold">FACTURE</h2>
+              <div className="bg-[#477A0C] text-[#F2EFE2] px-4 py-2 rounded-lg mb-3">
+                <h2 className="text-lg font-bold">FACTURE</h2>
               </div>
               
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center min-w-[200px]">
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between items-center min-w-[150px]">
                   <span className="font-semibold" style={{ color: '#080F0F' }}>N° Facture:</span>
-                  <span className="font-bold text-xl text-[#477A0C]">{invoice.invoiceNumber}</span>
+                  <span className="font-bold text-sm text-[#477A0C]">{invoice.invoiceNumber}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-semibold" style={{ color: '#080F0F' }}>Date:</span>
@@ -116,18 +116,18 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
         </div>
 
         {/* Informations client */}
-        <div className="p-8 border-b border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="p-4 border-b border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h3 className="text-lg font-bold text-[#477A0C] mb-4 border-b-2 border-[#477A0C] pb-2">
+              <h3 className="text-sm font-bold text-[#477A0C] mb-2 border-b border-[#477A0C] pb-1">
                 FACTURER À
               </h3>
-              <div className="space-y-2 text-sm">
-                <p className="font-bold text-lg" style={{ color: '#080F0F' }}>{invoice.client.name}</p>
+              <div className="space-y-1 text-xs">
+                <p className="font-bold text-sm" style={{ color: '#080F0F' }}>{invoice.client.name}</p>
                 <p style={{ color: '#080F0F' }}>{invoice.client.address}</p>
                 <p style={{ color: '#080F0F' }}>{invoice.client.postalCode} {invoice.client.city}</p>
                 {invoice.client.siret && <p style={{ color: '#080F0F' }}>SIRET: {invoice.client.siret}</p>}
-                <div className="pt-2 space-y-1">
+                <div className="pt-1 space-y-0.5">
                   <p style={{ color: '#080F0F' }}>
                     <span className="font-semibold">Tél:</span> {invoice.client.phone}
                   </p>
@@ -139,10 +139,10 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-[#477A0C] mb-4 border-b-2 border-[#477A0C] pb-2">
+              <h3 className="text-sm font-bold text-[#477A0C] mb-2 border-b border-[#477A0C] pb-1">
                 INFORMATIONS COMPLÉMENTAIRES
               </h3>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-1 text-xs">
                 {invoice.client.housingType && (
                   <p style={{ color: '#080F0F' }}><span className="font-semibold">Type de logement:</span> {invoice.client.housingType}</p>
                 )}
@@ -161,8 +161,8 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
         </div>
 
         {/* Tableau des produits */}
-        <div className="p-8">
-          <h3 className="text-lg font-bold text-[#477A0C] mb-6 border-b-2 border-[#477A0C] pb-2">
+        <div className="p-4">
+          <h3 className="text-sm font-bold text-[#477A0C] mb-3 border-b border-[#477A0C] pb-1">
             DÉTAIL DES PRODUITS
           </h3>
           
@@ -170,33 +170,33 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
             <table className="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
               <thead>
                 <tr className="bg-[#477A0C] text-[#F2EFE2]">
-                  <th className="border border-gray-300 px-4 py-4 text-left font-bold">DÉSIGNATION</th>
-                  <th className="border border-gray-300 px-3 py-4 text-center font-bold">QTÉ</th>
-                  <th className="border border-gray-300 px-3 py-4 text-right font-bold">PU HT</th>
-                  <th className="border border-gray-300 px-3 py-4 text-right font-bold">PU TTC</th>
-                  <th className="border border-gray-300 px-3 py-4 text-right font-bold">REMISE</th>
-                  <th className="border border-gray-300 px-3 py-4 text-right font-bold">TOTAL TTC</th>
+                  <th className="border border-gray-300 px-2 py-2 text-left font-bold text-xs">DÉSIGNATION</th>
+                  <th className="border border-gray-300 px-1 py-2 text-center font-bold text-xs">QTÉ</th>
+                  <th className="border border-gray-300 px-1 py-2 text-right font-bold text-xs">PU HT</th>
+                  <th className="border border-gray-300 px-1 py-2 text-right font-bold text-xs">PU TTC</th>
+                  <th className="border border-gray-300 px-1 py-2 text-right font-bold text-xs">REMISE</th>
+                  <th className="border border-gray-300 px-1 py-2 text-right font-bold text-xs">TOTAL TTC</th>
                 </tr>
               </thead>
               <tbody>
                 {invoice.products.map((product, index) => (
                   <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                    <td className="border border-gray-300 px-4 py-4">
+                    <td className="border border-gray-300 px-2 py-2">
                       <div className="font-semibold" style={{ color: '#080F0F' }}>{product.name}</div>
                       {product.category && (
-                        <div className="text-xs mt-1" style={{ color: '#080F0F' }}>{product.category}</div>
+                        <div className="text-xs mt-0.5" style={{ color: '#080F0F', fontSize: '10px' }}>{product.category}</div>
                       )}
                     </td>
-                    <td className="border border-gray-300 px-3 py-4 text-center font-semibold" style={{ color: '#080F0F' }}>
+                    <td className="border border-gray-300 px-1 py-2 text-center font-semibold text-xs" style={{ color: '#080F0F' }}>
                       {product.quantity}
                     </td>
-                    <td className="border border-gray-300 px-3 py-4 text-right" style={{ color: '#080F0F' }}>
+                    <td className="border border-gray-300 px-1 py-2 text-right text-xs" style={{ color: '#080F0F' }}>
                       {formatCurrency(calculateHT(product.priceTTC, invoice.taxRate))}
                     </td>
-                    <td className="border border-gray-300 px-3 py-4 text-right font-semibold" style={{ color: '#080F0F' }}>
+                    <td className="border border-gray-300 px-1 py-2 text-right font-semibold text-xs" style={{ color: '#080F0F' }}>
                       {formatCurrency(product.priceTTC)}
                     </td>
-                    <td className="border border-gray-300 px-3 py-4 text-right">
+                    <td className="border border-gray-300 px-1 py-2 text-right text-xs">
                       {product.discount > 0 ? (
                         <span className="text-red-600 font-semibold">
                           -{product.discountType === 'percent' 
@@ -208,7 +208,7 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
                         <span style={{ color: '#080F0F' }}>-</span>
                       )}
                     </td>
-                    <td className="border border-gray-300 px-3 py-4 text-right font-bold" style={{ color: '#080F0F' }}>
+                    <td className="border border-gray-300 px-1 py-2 text-right font-bold text-xs" style={{ color: '#080F0F' }}>
                       {formatCurrency(calculateProductTotal(
                         product.quantity,
                         product.priceTTC,
@@ -223,26 +223,26 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
           </div>
 
           {/* Totaux avec gestion acompte */}
-          <div className="mt-8 flex justify-end">
+          <div className="mt-4 flex justify-end">
             <div className="w-full max-w-md">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
                     <span className="font-semibold" style={{ color: '#080F0F' }}>Total HT:</span>
                     <span className="font-semibold" style={{ color: '#080F0F' }}>{formatCurrency(totals.subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs">
                     <span className="font-semibold" style={{ color: '#080F0F' }}>TVA ({invoice.taxRate}%):</span>
                     <span className="font-semibold" style={{ color: '#080F0F' }}>{formatCurrency(totals.taxAmount)}</span>
                   </div>
                   {totals.totalDiscount > 0 && (
-                    <div className="flex justify-between text-sm text-red-600">
+                    <div className="flex justify-between text-xs text-red-600">
                       <span className="font-semibold">Remise totale:</span>
                       <span className="font-semibold">-{formatCurrency(totals.totalDiscount)}</span>
                     </div>
                   )}
-                  <div className="border-t border-gray-300 pt-3">
-                    <div className="flex justify-between text-xl font-bold">
+                  <div className="border-t border-gray-300 pt-1">
+                    <div className="flex justify-between text-sm font-bold">
                       <span style={{ color: '#080F0F' }}>TOTAL TTC:</span>
                       <span className="text-[#477A0C]">{formatCurrency(totals.totalWithTax)}</span>
                     </div>
@@ -251,14 +251,14 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
                   {/* Gestion acompte - EXACTEMENT comme dans l'aperçu */}
                   {invoice.payment.method === 'Acompte' && invoice.payment.depositAmount > 0 && (
                     <>
-                      <div className="border-t border-gray-300 pt-3">
-                        <div className="flex justify-between text-sm">
+                      <div className="border-t border-gray-300 pt-1">
+                        <div className="flex justify-between text-xs">
                           <span className="font-semibold" style={{ color: '#080F0F' }}>Acompte versé:</span>
                           <span className="font-semibold text-blue-600">{formatCurrency(invoice.payment.depositAmount)}</span>
                         </div>
                       </div>
-                      <div className="bg-orange-50 border border-orange-200 rounded p-3">
-                        <div className="flex justify-between text-lg font-bold text-orange-600">
+                      <div className="bg-orange-50 border border-orange-200 rounded p-2">
+                        <div className="flex justify-between text-sm font-bold text-orange-600">
                           <span>RESTE À PAYER:</span>
                           <span>{formatCurrency(totals.totalWithTax - invoice.payment.depositAmount)}</span>
                         </div>
@@ -272,13 +272,13 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
 
           {/* Signature si présente */}
           {invoice.signature && (
-            <div className="mt-8 flex justify-end">
-              <div className="border border-gray-300 rounded p-4 w-64">
-                <h4 className="text-[#477A0C] font-bold text-sm mb-2 text-center">SIGNATURE CLIENT</h4>
-                <div className="h-16 flex items-center justify-center">
+            <div className="mt-4 flex justify-end">
+              <div className="border border-gray-300 rounded p-2 w-48">
+                <h4 className="text-[#477A0C] font-bold text-xs mb-1 text-center">SIGNATURE CLIENT</h4>
+                <div className="h-12 flex items-center justify-center">
                   <img src={invoice.signature} alt="Signature" className="max-h-full max-w-full" />
                 </div>
-                <p className="text-xs text-center mt-2" style={{ color: '#080F0F' }}>
+                <p className="text-xs text-center mt-1" style={{ color: '#080F0F', fontSize: '10px' }}>
                   Signé le {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -287,25 +287,25 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
         </div>
 
         {/* Informations de paiement et notes */}
-        <div className="p-8 border-t border-gray-200 bg-gray-50">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h3 className="text-lg font-bold text-[#477A0C] mb-4">MODALITÉS DE PAIEMENT</h3>
-              <div className="space-y-2 text-sm">
+              <h3 className="text-sm font-bold text-[#477A0C] mb-2">MODALITÉS DE PAIEMENT</h3>
+              <div className="space-y-1 text-xs">
                 {invoice.payment.method && (
                   <p style={{ color: '#080F0F' }}><span className="font-semibold">Mode de règlement:</span> {invoice.payment.method}</p>
                 )}
                 
                 {/* Affichage spécial pour acompte */}
                 {invoice.payment.method === 'Acompte' && invoice.payment.depositAmount > 0 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded p-2 mt-2">
                     <p className="font-semibold text-blue-800">Détails de l'acompte:</p>
                     <p className="text-blue-700">Montant versé: <span className="font-bold">{formatCurrency(invoice.payment.depositAmount)}</span></p>
                     <p className="text-orange-700 font-semibold">Reste à payer: <span className="font-bold">{formatCurrency(totals.totalWithTax - invoice.payment.depositAmount)}</span></p>
                   </div>
                 )}
                 
-                <div className="bg-white p-4 rounded border mt-4">
+                <div className="bg-white p-2 rounded border mt-2">
                   <p className="text-xs" style={{ color: '#080F0F' }}>
                     Paiement à réception de facture. En cas de retard de paiement, des pénalités de 3 fois le taux d'intérêt légal seront appliquées.
                   </p>
@@ -316,8 +316,8 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
             <div>
               {invoice.invoiceNotes && (
                 <>
-                  <h3 className="text-lg font-bold text-[#477A0C] mb-4">REMARQUES</h3>
-                  <div className="text-sm bg-white p-4 rounded border">
+                  <h3 className="text-sm font-bold text-[#477A0C] mb-2">REMARQUES</h3>
+                  <div className="text-xs bg-white p-2 rounded border">
                     <p style={{ color: '#080F0F' }}>{invoice.invoiceNotes}</p>
                   </div>
                 </>
@@ -325,8 +325,8 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
               
               {invoice.delivery.notes && (
                 <>
-                  <h3 className="text-lg font-bold text-[#477A0C] mb-4 mt-6">LIVRAISON</h3>
-                  <div className="text-sm bg-white p-4 rounded border">
+                  <h3 className="text-sm font-bold text-[#477A0C] mb-2 mt-3">LIVRAISON</h3>
+                  <div className="text-xs bg-white p-2 rounded border">
                     <p style={{ color: '#080F0F' }}>{invoice.delivery.notes}</p>
                   </div>
                 </>
@@ -336,13 +336,13 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
         </div>
 
         {/* Pied de page */}
-        <div className="p-8 border-t-4 border-[#477A0C] bg-[#477A0C] text-[#F2EFE2]">
+        <div className="p-4 border-t-2 border-[#477A0C] bg-[#477A0C] text-[#F2EFE2]">
           <div className="text-center">
-            <div className="flex items-center justify-center mb-4">
-              <span className="text-2xl mr-3">🌸</span>
-              <span className="text-2xl font-bold">MYCONFORT</span>
+            <div className="flex items-center justify-center mb-2">
+              <span className="text-lg mr-2">🌸</span>
+              <span className="text-lg font-bold">MYCONFORT</span>
             </div>
-            <p className="font-bold text-lg mb-2">Merci de votre confiance !</p>
+            <p className="font-bold text-sm mb-1">Merci de votre confiance !</p>
             <p className="text-sm opacity-90">
               Votre spécialiste en matelas et literie de qualité
             </p>
