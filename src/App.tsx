@@ -263,26 +263,9 @@ function App() {
     }
   };
 
-  // 🖨️ Handler pour imprimer la facture avec validation
   const handlePrintInvoice = () => {
-    const validation = validateMandatoryFields();
-    if (!validation.isValid) {
-      showToast(`Impossible d'imprimer. Champs obligatoires manquants: ${validation.errors.join(', ')}`, 'error');
-      return;
-    }
-    
-    handleSave();
-    handleSaveInvoice();
-    showToast('🖨️ Préparation de l\'impression...', 'success');
-    
-    try {
-      // Appeler directement votre fonction directPrintPreview
-      directPrintPreview();
-      
-    } catch (error) {
-      console.error('❌ Erreur impression:', error);
-      showToast('Erreur lors de l\'impression de la facture', 'error');
-    }
+    // Pré-traitement possible ici...
+    window.print(); // Ouvre l'aperçu avant impression natif
   };
 
   const handleShowPDFPreview = () => {
