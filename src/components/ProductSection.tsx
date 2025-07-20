@@ -813,29 +813,47 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
                 <User className="w-4 h-4 mr-2" />
                 Signature client MYCONFORT
               </label>
-              <div className="border-2 border-dashed border-[#477A0C] rounded h-20 flex items-center justify-center bg-white hover:bg-gray-50 transition-colors cursor-pointer"
-                   onClick={onShowSignaturePad}>
+              <div className="border-2 border-dashed border-[#477A0C] rounded h-20 flex items-center justify-center bg-white hover:bg-gray-50 transition-colors">
                 {signature ? (
                   <div className="text-center">
                     <div className="text-green-600 font-semibold flex items-center justify-center space-x-1">
                       <span>🔒</span>
                       <span>Signature électronique enregistrée</span>
                     </div>
+                    <div className="mt-2 h-12 flex items-center justify-center">
+                      <img src={signature} alt="Signature" className="max-h-full max-w-full" />
+                    </div>
                     <button
                       onClick={onShowSignaturePad}
-                      className="text-sm text-blue-600 hover:text-blue-800 underline mt-1"
+                      className="text-sm text-blue-600 hover:text-blue-800 underline mt-2 px-3 py-1 bg-blue-100 rounded-lg transition-colors"
                     >
-                      Modifier la signature
+                      ✏️ Modifier la signature
                     </button>
                   </div>
                 ) : (
                   <button
                     onClick={onShowSignaturePad}
-                    className="text-black hover:text-[#477A0C] font-semibold flex items-center space-x-2"
+                    className="text-black hover:text-[#477A0C] font-semibold flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                   >
                     <span>✍️</span>
                     <span>Cliquer pour signer électroniquement</span>
                   </button>
+                )}
+              </div>
+              
+              {/* Informations sur la signature */}
+              <div className="mt-3 text-xs text-blue-600">
+                {signature ? (
+                  <div className="flex items-center justify-between">
+                    <span>✅ Signature valide et sécurisée</span>
+                    <span className="text-gray-500">
+                      Signée le {new Date().toLocaleDateString('fr-FR')}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-orange-600">
+                    ⚠️ Signature recommandée pour valider la commande
+                  </div>
                 )}
               </div>
             </div>

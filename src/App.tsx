@@ -9,6 +9,7 @@ import { ProductsListModal } from './components/ProductsListModal';
 import { PDFPreviewModal } from './components/PDFPreviewModal';
 import { PDFGuideModal } from './components/PDFGuideModal';
 import { GoogleDriveModal } from './components/GoogleDriveModal';
+import { SignaturePad } from './components/SignaturePad';
 import { InvoicePDF } from './components/InvoicePDF';
 import { Toast } from './components/ui/Toast';
 import { Invoice, Client, ToastType } from './types';
@@ -57,6 +58,7 @@ function App() {
   const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [showPDFGuide, setShowPDFGuide] = useState(false);
   const [showGoogleDriveConfig, setShowGoogleDriveConfig] = useState(false);
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
   const [showInvoicePreview, setShowInvoicePreview] = useState(true);
   const [toast, setToast] = useState({
     show: false,
@@ -529,7 +531,7 @@ function App() {
             termsAccepted={invoice.termsAccepted}
             onTermsAcceptedChange={(accepted) => setInvoice(prev => ({ ...prev, termsAccepted: accepted }))}
             signature={invoice.signature}
-            // onShowSignaturePad={() => setShowSignaturePad(true)} // Removed
+            onShowSignaturePad={() => setShowSignaturePad(true)}
           />
         </div>
 
@@ -750,12 +752,11 @@ function App() {
         onError={handleEmailJSError}
       />
 
-      {/* SignaturePad removed */}
-      {/* <SignaturePad
+      <SignaturePad
         isOpen={showSignaturePad}
         onClose={() => setShowSignaturePad(false)}
         onSave={handleSaveSignature}
-      /> */}
+      />
 
       <Toast
         message={toast.message}
