@@ -263,7 +263,61 @@ function App() {
     }
   };
 
-  // 🖨️ Handler pour imprimer la facture
+  // 🖨️ FONCTION D'IMPRESSION DIRECTE OPTIMISÉE
+  const directPrintPreview = () => {
+    const element = document.getElementById('invoice-preview-section');
+    if (!element) {
+      showToast('Aperçu non trouvé pour l\'impression', 'error');
+      return;
+    }
+    
+    // Sauvegarder le contenu original
+    const originalContent = document.body.innerHTML;
+    const originalTitle = document.title;
+    
+    // CSS d'impression optimisé
+    const printStyles = `
+      <style>
+        @page { size: A4; margin: 15mm; }
+        body { font-family: Arial; margin: 0; padding: 20px; background: white; }
+        .bg-\\[\\#F2EFE2\\] { background: #F2EFE2 !important; padding: 1rem; border-radius: 0.5rem; }
+        .bg-white { background: white !important; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: bold; }
+        .border { border: 1px solid #ddd; }
+        table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+        table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        table th { background: #f5f5f5; font-weight: bold; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-lg { font-size: 1.125rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .p-4 { padding: 1rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+      </style>
+    `;
+    
+    // Remplacer le contenu de la page
+    document.title = 'Impression Facture MyConfort';
+    document.body.innerHTML = printStyles + element.outerHTML;
+    
+    console.log('📄 Page préparée pour impression');
+    
+    // Lancer l'impression
+    setTimeout(() => {
+      window.print();
+      
+      // Restaurer le contenu original après impression
+      setTimeout(() => {
+        document.body.innerHTML = originalContent;
+        document.title = originalTitle;
+        console.log('✅ Page restaurée');
+        showToast('🖨️ Impression terminée avec succès', 'success');
+      }, 1000);
+    }, 500);
+  };
+
+  // 🖨️ Handler pour imprimer la facture avec validation
   const handlePrintInvoice = () => {
     const validation = validateMandatoryFields();
     if (!validation.isValid) {
@@ -276,90 +330,8 @@ function App() {
     showToast('🖨️ Préparation de l\'impression...', 'success');
     
     try {
-      // Utiliser l'aperçu existant pour l'impression
-      const printContent = document.getElementById('invoice-preview-section');
-      if (!printContent) {
-        showToast('Aperçu de facture introuvable pour l\'impression', 'error');
-        return;
-      }
-      
-      // Créer une nouvelle fenêtre pour l'impression
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        showToast('Impossible d\'ouvrir la fenêtre d\'impression. Veuillez autoriser les pop-ups.', 'error');
-        return;
-      }
-      
-      // Copier le contenu de l'aperçu
-      const invoiceContent = printContent.innerHTML;
-      
-      // Créer le HTML pour l'impression
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Facture ${invoice.invoiceNumber}</title>
-          <meta charset="UTF-8">
-          <link href="https://cdn.tailwindcss.com" rel="stylesheet">
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-          <style>
-            body {
-              font-family: 'Inter', sans-serif;
-              margin: 0;
-              padding: 0;
-              background: white;
-              color: #080F0F;
-            }
-            
-            @media print {
-              body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                margin: 0;
-                padding: 10mm;
-              }
-              
-              * {
-                print-color-adjust: exact;
-                -webkit-print-color-adjust: exact;
-              }
-              
-              @page {
-                margin: 10mm;
-                size: A4;
-              }
-              
-              .no-print {
-                display: none !important;
-              }
-            }
-            
-            /* Styles spécifiques pour l'impression */
-            .bg-\\[\\#477A0C\\] { background-color: #477A0C !important; }
-            .text-\\[\\#F2EFE2\\] { color: #F2EFE2 !important; }
-            .text-\\[\\#080F0F\\] { color: #080F0F !important; }
-            .border-\\[\\#477A0C\\] { border-color: #477A0C !important; }
-          </style>
-        </head>
-        <body>
-          ${invoiceContent}
-        </body>
-        </html>
-      `);
-      
-      printWindow.document.close();
-      
-      // Attendre que le contenu soit chargé puis imprimer
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.print();
-          showToast('🖨️ Impression lancée avec succès', 'success');
-          // Fermer la fenêtre après impression
-          setTimeout(() => {
-            printWindow.close();
-          }, 1000);
-        }, 500);
-      };
+      // Utiliser la fonction d'impression directe optimisée
+      directPrintPreview();
       
     } catch (error) {
       console.error('❌ Erreur impression:', error);
