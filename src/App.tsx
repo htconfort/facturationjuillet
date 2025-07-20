@@ -267,7 +267,7 @@ function App() {
   const directPrintPreview = () => {
     const element = document.getElementById('invoice-preview-section');
     if (!element) {
-      showToast('Aperçu non trouvé pour l\'impression', 'error');
+      alert('Aperçu non trouvé');
       return;
     }
     
@@ -312,7 +312,6 @@ function App() {
         document.body.innerHTML = originalContent;
         document.title = originalTitle;
         console.log('✅ Page restaurée');
-        showToast('🖨️ Impression terminée avec succès', 'success');
       }, 1000);
     }, 500);
   };
