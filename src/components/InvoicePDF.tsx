@@ -346,7 +346,7 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
         </div>
 
         {/* Pied de page */}
-        <div className="p-4 border-t-2 border-[#477A0C] bg-[#477A0C] text-[#F2EFE2]">
+        <div className="p-4 border-t-2 border-[#477A0C] bg-[#477A0C] text-[#F2EFE2] print:page-break-after">
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
               <span className="text-lg mr-2">🌸</span>
@@ -359,6 +359,103 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
             <div className="mt-4 text-xs opacity-75">
               <p>TVA non applicable, art. 293 B du CGI - RCS Paris 824 313 530</p>
             </div>
+          </div>
+        </div>
+
+        {/* DEUXIÈME PAGE - CONDITIONS GÉNÉRALES DE VENTE (visible uniquement à l'impression) */}
+        <div className="hidden print:block print:page-break-before" style={{ fontFamily: 'Inter, sans-serif', color: '#080F0F', fontSize: '11px', lineHeight: '1.4' }}>
+          {/* En-tête de la deuxième page */}
+          <div className="p-4 border-b-2 border-[#477A0C] bg-[#477A0C] text-[#F2EFE2] text-center">
+            <h1 className="text-xl font-bold">CONDITIONS GÉNÉRALES DE VENTE</h1>
+            <p className="text-sm mt-1">MYCONFORT - 88 Avenue des Ternes, 75017 Paris</p>
+          </div>
+
+          {/* Contenu des conditions générales */}
+          <div className="p-4 space-y-3">
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 1 - Livraison</h3>
+              <p className="text-justify">Une fois la commande expédiée, vous serez contacté par SMS ou mail pour programmer la livraison en fonction de vos disponibilités (à la journée ou demi-journée). Le transporteur livre le produit au pas de porte ou en bas de l'immeuble. Veuillez vérifier que les dimensions du produit permettent son passage dans les escaliers, couloirs et portes. Aucun service d'installation ou de reprise de l'ancienne literie n'est prévu.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 2 - Délais de Livraison</h3>
+              <p className="text-justify">Les délais de livraison sont donnés à titre indicatif et ne constituent pas un engagement ferme. En cas de retard, aucune indemnité ou annulation ne sera acceptée, notamment en cas de force majeure. Nous déclinons toute responsabilité en cas de délai dépassé.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 3 - Risques de Transport</h3>
+              <p className="text-justify">Les marchandises voyagent aux risques du destinataire. En cas d'avarie ou de perte, il appartient au client de faire les réserves nécessaires obligatoire sur le bordereau du transporteur. En cas de non-respect de cette obligation on ne peut pas se retourner contre le transporteur.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 4 - Acceptation des Conditions</h3>
+              <p className="text-justify">Toute livraison implique l'acceptation des présentes conditions. Le transporteur livre à l'adresse indiquée sans monter les étages. Le client est responsable de vérifier et d'accepter les marchandises lors de la livraison.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 5 - Réclamations</h3>
+              <p className="text-justify">Les réclamations concernant la qualité des marchandises doivent être formulées par écrit dans les huit jours suivant la livraison, par lettre recommandée avec accusé de réception.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 6 - Retours</h3>
+              <p className="text-justify">Aucun retour de marchandises ne sera accepté sans notre accord écrit préalable. Cet accord n'implique aucune reconnaissance.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 7 - Tailles des Matelas</h3>
+              <p className="text-justify">Les dimensions des matelas peuvent varier de +/- 5 cm en raison de la thermosensibilité des mousses viscoélastiques. Les tailles standards sont données à titre indicatif et ne constituent pas une obligation contractuelle. Les matelas sur mesure doivent inclure les spécifications exactes du cadre de lit.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 8 - Odeur des Matériaux</h3>
+              <p className="text-justify">Les mousses viscoélastiques naturelles (à base d'huile de ricin) et les matériaux de conditionnement peuvent émettre une légère odeur qui disparaît après déballage. Cela ne constitue pas un défaut.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 9 - Règlements et Remises</h3>
+              <p className="text-justify">Sauf accord express, aucun rabais ou escompte ne sera appliqué pour paiement comptant. La garantie couvre les mousses, mais pas les textiles et accessoires.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 10 - Paiement</h3>
+              <p className="text-justify">Les factures sont payables par chèque, virement, carte bancaire ou espèce à réception.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 11 - Pénalités de Retard</h3>
+              <p className="text-justify">En cas de non-paiement, une majoration de 10% avec un minimum de 300 € sera appliquée, sans préjudice des intérêts de retard. Nous nous réservons le droit de résilier la vente sans sommation.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 12 - Exigibilité en Cas de Non-Paiement</h3>
+              <p className="text-justify">Le non-paiement d'une échéance rend immédiatement exigible le solde de toutes les échéances à venir.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 13 - Livraison Incomplète ou Non-Conforme</h3>
+              <p className="text-justify">En cas de livraison endommagée ou non conforme, mentionnez-le sur le bon de livraison et refusez le produit. Si l'erreur est constatée après le départ du transporteur, contactez-nous sous 72h ouvrables.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 14 - Litiges</h3>
+              <p className="text-justify">Tout litige sera de la compétence exclusive du Tribunal de Commerce de Perpignan ou du tribunal compétent du prestataire.</p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-[#477A0C] mb-1">Art. 15 - Horaires de Livraison</h3>
+              <p className="text-justify">Les livraisons sont effectuées du lundi au vendredi (hors jours fériés). Une personne majeure doit être présente à l'adresse lors de la livraison. Toute modification d'adresse après commande doit être signalée immédiatement à myconfort66@gmail.com.</p>
+            </div>
+          </div>
+
+          {/* Pied de page de la deuxième page */}
+          <div className="mt-6 p-4 border-t-2 border-[#477A0C] bg-[#477A0C] text-[#F2EFE2] text-center">
+            <div className="flex items-center justify-center mb-2">
+              <span className="text-lg mr-2">🌸</span>
+              <span className="text-lg font-bold">MYCONFORT</span>
+            </div>
+            <p className="text-sm">88 Avenue des Ternes, 75017 Paris - Tél: 04 68 50 41 45</p>
+            <p className="text-sm">Email: myconfort@gmail.com - SIRET: 824 313 530 00027</p>
           </div>
         </div>
       </div>
