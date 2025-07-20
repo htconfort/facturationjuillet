@@ -263,59 +263,6 @@ function App() {
     }
   };
 
-  // 🖨️ FONCTION D'IMPRESSION DIRECTE OPTIMISÉE
-  const directPrintPreview = () => {
-    const element = document.getElementById('invoice-preview-section');
-    if (!element) {
-      alert('Aperçu non trouvé');
-      return;
-    }
-    
-    // Sauvegarder le contenu original
-    const originalContent = document.body.innerHTML;
-    const originalTitle = document.title;
-    
-    // CSS d'impression optimisé
-    const printStyles = `
-      <style>
-        @page { size: A4; margin: 15mm; }
-        body { font-family: Arial; margin: 0; padding: 20px; background: white; }
-        .bg-\\[\\#F2EFE2\\] { background: #F2EFE2 !important; padding: 1rem; border-radius: 0.5rem; }
-        .bg-white { background: white !important; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .text-center { text-align: center; }
-        .font-bold { font-weight: bold; }
-        .border { border: 1px solid #ddd; }
-        table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
-        table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        table th { background: #f5f5f5; font-weight: bold; }
-        .text-2xl { font-size: 1.5rem; }
-        .text-lg { font-size: 1.125rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .p-4 { padding: 1rem; }
-        .rounded-lg { border-radius: 0.5rem; }
-      </style>
-    `;
-    
-    // Remplacer le contenu de la page
-    document.title = 'Impression Facture MyConfort';
-    document.body.innerHTML = printStyles + element.outerHTML;
-    
-    console.log('📄 Page préparée pour impression');
-    
-    // Lancer l'impression
-    setTimeout(() => {
-      window.print();
-      
-      // Restaurer le contenu original après impression
-      setTimeout(() => {
-        document.body.innerHTML = originalContent;
-        document.title = originalTitle;
-        console.log('✅ Page restaurée');
-      }, 1000);
-    }, 500);
-  };
-
   // 🖨️ Handler pour imprimer la facture avec validation
   const handlePrintInvoice = () => {
     const validation = validateMandatoryFields();
@@ -329,7 +276,7 @@ function App() {
     showToast('🖨️ Préparation de l\'impression...', 'success');
     
     try {
-      // Utiliser la fonction d'impression directe optimisée
+      // Appeler directement votre fonction directPrintPreview
       directPrintPreview();
       
     } catch (error) {
