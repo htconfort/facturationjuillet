@@ -263,6 +263,110 @@ function App() {
     }
   };
 
+  // 🖨️ Handler pour imprimer la facture
+  const handlePrintInvoice = () => {
+    const validation = validateMandatoryFields();
+    if (!validation.isValid) {
+      showToast(`Impossible d'imprimer. Champs obligatoires manquants: ${validation.errors.join(', ')}`, 'error');
+      return;
+    }
+    
+    handleSave();
+    handleSaveInvoice();
+    showToast('🖨️ Préparation de l\'impression...', 'success');
+    
+    try {
+      // Utiliser l'aperçu existant pour l'impression
+      const printContent = document.getElementById('invoice-preview-section');
+      if (!printContent) {
+        showToast('Aperçu de facture introuvable pour l\'impression', 'error');
+        return;
+      }
+      
+      // Créer une nouvelle fenêtre pour l'impression
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        showToast('Impossible d\'ouvrir la fenêtre d\'impression. Veuillez autoriser les pop-ups.', 'error');
+        return;
+      }
+      
+      // Copier le contenu de l'aperçu
+      const invoiceContent = printContent.innerHTML;
+      
+      // Créer le HTML pour l'impression
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Facture ${invoice.invoiceNumber}</title>
+          <meta charset="UTF-8">
+          <link href="https://cdn.tailwindcss.com" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+          <style>
+            body {
+              font-family: 'Inter', sans-serif;
+              margin: 0;
+              padding: 0;
+              background: white;
+              color: #080F0F;
+            }
+            
+            @media print {
+              body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                margin: 0;
+                padding: 10mm;
+              }
+              
+              * {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+              }
+              
+              @page {
+                margin: 10mm;
+                size: A4;
+              }
+              
+              .no-print {
+                display: none !important;
+              }
+            }
+            
+            /* Styles spécifiques pour l'impression */
+            .bg-\\[\\#477A0C\\] { background-color: #477A0C !important; }
+            .text-\\[\\#F2EFE2\\] { color: #F2EFE2 !important; }
+            .text-\\[\\#080F0F\\] { color: #080F0F !important; }
+            .border-\\[\\#477A0C\\] { border-color: #477A0C !important; }
+          </style>
+        </head>
+        <body>
+          ${invoiceContent}
+        </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      // Attendre que le contenu soit chargé puis imprimer
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          showToast('🖨️ Impression lancée avec succès', 'success');
+          // Fermer la fenêtre après impression
+          setTimeout(() => {
+            printWindow.close();
+          }, 1000);
+        }, 500);
+      };
+      
+    } catch (error) {
+      console.error('❌ Erreur impression:', error);
+      showToast('Erreur lors de l\'impression de la facture', 'error');
+    }
+  };
+
   const handleShowPDFPreview = () => {
     const validation = validateMandatoryFields();
     if (!validation.isValid) {
@@ -612,6 +716,14 @@ function App() {
                 >
                   <span>⬇️</span>
                   <span>TÉLÉCHARGER PDF</span>
+                </button>
+                <button
+                  onClick={handlePrintInvoice}
+                  className="px-6 py-3 rounded-xl flex items-center space-x-3 font-bold shadow-lg transform transition-all hover:scale-105 bg-orange-600 hover:bg-orange-700 text-white"
+                  title="Imprimer la facture directement"
+                >
+                  <span>🖨️</span>
+                  <span>IMPRIMER</span>
                 </button>
                 <button
                   onClick={handleSendPDF}
