@@ -248,6 +248,16 @@ export const InvoicePDF = React.forwardRef<HTMLDivElement, InvoicePDFProps>(
                     </div>
                   </div>
                   
+                  {/* Conditions générales de vente */}
+                  <div className="border-t border-gray-300 pt-2 mt-2">
+                    <div className="flex items-center space-x-2 text-xs">
+                      <span className="text-green-600 font-bold">✅</span>
+                      <span className="font-semibold" style={{ color: '#080F0F' }}>
+                        J'ai lu et j'accepte les conditions générales de vente *
+                      </span>
+                    </div>
+                  </div>
+                  
                   {/* Gestion acompte - EXACTEMENT comme dans l'aperçu */}
                   {invoice.payment.method === 'Acompte' && invoice.payment.depositAmount > 0 && (
                     <>

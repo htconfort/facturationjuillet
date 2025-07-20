@@ -624,11 +624,6 @@ function App() {
               <div className="border border-gray-300 rounded-lg overflow-hidden">
                 <InvoicePDF invoice={invoice} isPreview={true} />
               </div>
-
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-                <p className="font-semibold">🎯 Aperçu de votre facture MYCONFORT</p>
-                <p>Cet aperçu sera converti en PDF lorsque vous cliquerez sur le bouton "Générer et télécharger le PDF".</p>
-              </div>
             </div>
           </div>
         )}
